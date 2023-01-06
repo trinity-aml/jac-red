@@ -72,7 +72,7 @@ namespace JacRed.Controllers.CRON
                     continue;
 
                 // Максимальное количиство страниц
-                int.TryParse(Regex.Match(html, $"<a href=\"/{cat}/\\?page=([0-9]+)\"><b>[0-9]+</b></a></p>").Groups[1].Value, out int maxpages);
+                int.TryParse(Regex.Match(html, "href=\"\\?page=([0-9]+)\">[0-9]+</a>([\t ]+)?</center></td>").Groups[1].Value, out int maxpages);
 
                 if (maxpages > 0)
                 {

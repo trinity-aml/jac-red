@@ -65,7 +65,7 @@ namespace JacRed
 
         public TrackerSettings Megapeer = new TrackerSettings("http://megapeer.vip");
 
-        public TrackerSettings TorrentBy = new TrackerSettings("http://torrent.by", priority: "torrent");
+        public TrackerSettings TorrentBy = new TrackerSettings("https://torrent.by", priority: "torrent");
 
         public TrackerSettings Kinozal = new TrackerSettings("http://kinozal.tv");
 
