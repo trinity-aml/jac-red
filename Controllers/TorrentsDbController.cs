@@ -6,6 +6,7 @@ using JacRed.Engine.Parse;
 using System.Linq;
 using System;
 using JacRed.Engine;
+using System.Globalization;
 
 namespace JacRed.Controllers
 {
@@ -36,7 +37,7 @@ namespace JacRed.Controllers
                     var gsize = Regex.Match(item.Value.sizeName, "([0-9\\.,]+) (Mb|МБ|GB|ГБ|TB|ТБ)", RegexOptions.IgnoreCase).Groups;
                     if (!string.IsNullOrWhiteSpace(gsize[2].Value))
                     {
-                        double.TryParse(gsize[1].Value.Replace(",", "."), out size);
+                        double.TryParse(gsize[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out size);
                         if (size == 0)
                             size = 0.1;
 

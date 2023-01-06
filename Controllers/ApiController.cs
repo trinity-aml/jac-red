@@ -13,8 +13,8 @@ namespace JacRed.Controllers
     public class ApiController : BaseController
     {
         #region Jackett
-        [Route("api/v2.0/indexers/all/results")]
-        public ActionResult Jackett(string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
+        [Route("api/v2.0/indexers/{status}//results")]
+        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
             var torrents = new List<TorrentDetails>();
 
@@ -41,16 +41,19 @@ namespace JacRed.Controllers
                 string cat = category.FirstOrDefault().Value;
                 if (cat != null)
                 {
-                    if (cat == "5020" || cat == "2010")
+                    if (cat.Contains("5020") || cat.Contains("2010"))
                         is_serial = 3; // tvshow
-                    else if (cat == "5080")
+                    else if (cat.Contains("5080"))
                         is_serial = 4; // док
-                    else if (cat == "5070")
+                    else if (cat.Contains("5070"))
                         is_serial = 5; // аниме
-                    else if (cat.StartsWith("20"))
-                        is_serial = 1;
-                    else if (cat.StartsWith("50"))
-                        is_serial = 2;
+                    else if (is_serial == 0)
+                    {
+                        if (cat.StartsWith("20"))
+                            is_serial = 1; // фильм
+                        else if (cat.StartsWith("50"))
+                            is_serial = 2; // сериал
+                    }
                 }
             }
             #endregion

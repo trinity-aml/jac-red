@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace JacRed.Engine.Middlewares
@@ -16,6 +17,12 @@ namespace JacRed.Engine.Middlewares
             httpContext.Response.Headers.Add("Access-Control-Allow-Headers", "Accept, Content-Type");
             httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "POST, GET");
             httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+            if (!string.IsNullOrWhiteSpace(AppInit.conf.apikey))
+            {
+                if (AppInit.conf.apikey != Regex.Match(httpContext.Request.QueryString.Value, "(\\?|&)apikey=([^&]+)").Groups[2].Value)
+                    return Task.CompletedTask;
+            }
 
             return _next(httpContext);
         }
