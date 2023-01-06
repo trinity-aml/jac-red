@@ -58,7 +58,7 @@ namespace JacRed.Controllers.CRON
             // 17 - Иностранные релизы         | UA озвучка
             foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", /*"17"*/ })
             {
-                string html = await HttpClient.Get($"http://rutor.info/browse/0/{cat}/0/0", useproxy: true);
+                string html = await HttpClient.Get($"{AppInit.conf.Rutor.host}/browse/0/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
                 if (html == null)
                     continue;
 
@@ -134,7 +134,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"http://rutor.info/browse/{page}/{cat}/0/0", useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.Rutor.host}/browse/{page}/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
             if (html == null)
                 return false;
 
@@ -166,10 +166,10 @@ namespace JacRed.Controllers.CRON
                 string sizeName = Match("<td align=\"right\">([^<]+)</td>");
                 string magnet = Match("href=\"(magnet:\\?xt=[^\"]+)\"");
 
-                if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName) || string.IsNullOrWhiteSpace(magnet))
+                if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || title.ToLower().Contains("трейлер") || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName) || string.IsNullOrWhiteSpace(magnet))
                     continue;
 
-                url = "http://rutor.info/" + url;
+                url = $"{AppInit.conf.Rutor.host}/{url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -213,24 +213,36 @@ namespace JacRed.Controllers.CRON
                 else if (cat == "4")
                 {
                     #region Зарубежные сериалы
-                    var g = Regex.Match(title, "^([^/]+) / ([^/]+) / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                    var g = Regex.Match(title, "^([^/]+) / [^/]+ / [^/]+ / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
                     if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                     {
-                        name = g[1].Value;
-                        originalname = g[3].Value;
-
-                        if (int.TryParse(g[4].Value, out int _yer))
-                            relased = _yer;
-                    }
-                    else
-                    {
-                        g = Regex.Match(title, "^([^/]+) / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
-
                         name = g[1].Value;
                         originalname = g[2].Value;
 
                         if (int.TryParse(g[3].Value, out int _yer))
                             relased = _yer;
+                    }
+                    else
+                    {
+                        g = Regex.Match(title, "^([^/]+) / [^/]+ / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                        if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
+                        {
+                            name = g[1].Value;
+                            originalname = g[2].Value;
+
+                            if (int.TryParse(g[3].Value, out int _yer))
+                                relased = _yer;
+                        }
+                        else
+                        {
+                            g = Regex.Match(title, "^([^/]+) / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+
+                            name = g[1].Value;
+                            originalname = g[2].Value;
+
+                            if (int.TryParse(g[3].Value, out int _yer))
+                                relased = _yer;
+                        }
                     }
                     #endregion
                 }
