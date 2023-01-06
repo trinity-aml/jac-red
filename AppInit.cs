@@ -10,10 +10,6 @@ namespace JacRed
     public class AppInit
     {
         #region СНЕСТИ
-        public static List<string> proxyList;
-
-        public static string kinozalCookie;
-
         public static string selezenCookie;
 
         public static string lostfilmCookie;

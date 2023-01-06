@@ -11,13 +11,80 @@ using JacRed.Engine.Parse;
 using JacRed.Models.tParse;
 using IO = System.IO;
 using JacRed.Engine;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/kinozal/[action]")]
+    [Route("/cron/kinozal/[action]")]
     public class KinozalController : BaseController
     {
         static Dictionary<string, Dictionary<string, List<TaskParse>>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<TaskParse>>>>(IO.File.ReadAllText("Data/temp/kinozal_taskParse.json"));
+
+        #region Cookie / TakeLogin
+        static string Cookie;
+
+        async void TakeLogin()
+        {
+            string authKey = "kinozal:TakeLogin()";
+            if (memoryCache.TryGetValue(authKey, out _))
+                return;
+
+            memoryCache.Set(authKey, 0, TimeSpan.FromMinutes(2));
+
+            try
+            {
+                var clientHandler = new System.Net.Http.HttpClientHandler()
+                {
+                    AllowAutoRedirect = false
+                };
+
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+                using (var client = new System.Net.Http.HttpClient(clientHandler))
+                {
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    client.MaxResponseContentBufferSize = 2000000; // 2MB
+                    client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36");
+                    client.DefaultRequestHeaders.Add("cache-control", "no-cache");
+                    client.DefaultRequestHeaders.Add("dnt", "1");
+                    client.DefaultRequestHeaders.Add("origin", AppInit.conf.Kinozal.host);
+                    client.DefaultRequestHeaders.Add("pragma", "no-cache");
+                    client.DefaultRequestHeaders.Add("referer", $"{AppInit.conf.Kinozal.host}/");
+                    client.DefaultRequestHeaders.Add("upgrade-insecure-requests", "1");
+
+                    var postParams = new Dictionary<string, string>();
+                    postParams.Add("username", AppInit.conf.Kinozal.login.u);
+                    postParams.Add("password", AppInit.conf.Kinozal.login.p);
+                    postParams.Add("returnto", "");
+
+                    using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
+                    {
+                        using (var response = await client.PostAsync($"{AppInit.conf.Kinozal.host}/takelogin.php", postContent))
+                        {
+                            if (response.Headers.TryGetValues("Set-Cookie", out var cook))
+                            {
+                                string uid = null, pass = null;
+                                foreach (string line in cook)
+                                {
+                                    if (string.IsNullOrWhiteSpace(line))
+                                        continue;
+
+                                    if (line.Contains("uid="))
+                                        uid = new Regex("uid=([0-9]+)").Match(line).Groups[1].Value;
+
+                                    if (line.Contains("pass="))
+                                        pass = new Regex("pass=([^;]+)(;|$)").Match(line).Groups[1].Value;
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(uid) && !string.IsNullOrWhiteSpace(pass))
+                                    Cookie = $"uid={uid}; pass={pass};";
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+        #endregion
 
 
         #region Parse
@@ -80,7 +147,7 @@ namespace JacRed.Controllers.CRON
                 for (int year = DateTime.Today.Year; year >= 1990; year--)
                 {
                     // Получаем html
-                    string html = await HttpClient.Get($"http://kinozal.tv/browse.php?c={cat}&d={year}&t=1", timeoutSeconds: 10, useproxy: true);
+                    string html = await HttpClient.Get($"{AppInit.conf.Kinozal.host}/browse.php?c={cat}&d={year}&t=1", timeoutSeconds: 10, useproxy: AppInit.conf.Kinozal.useproxy);
                     if (html == null)
                         continue;
 
@@ -131,11 +198,10 @@ namespace JacRed.Controllers.CRON
                     {
                         foreach (var val in arg.Value)
                         {
-                            if (1 >= DateTime.Now.Hour)
-                                break;
-
                             if (DateTime.Today == val.updateTime)
                                 continue;
+
+                            await Task.Delay(AppInit.conf.Kinozal.parseDelay);
 
                             bool res = await parsePage(cat.Key, val.page, arg.Key);
                             if (res)
@@ -155,9 +221,12 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, string arg = null, bool parseMagnet = false)
         {
-            string html = await HttpClient.Get($"http://kinozal.tv/browse.php?c={cat}&page={page}" + arg, useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.Kinozal.host}/browse.php?c={cat}&page={page}" + arg, useproxy: AppInit.conf.Kinozal.useproxy);
             if (html == null || !html.Contains("Кинозал.ТВ</title>"))
                 return false;
+
+            if (Cookie == null || !html.Contains(">Выход</a>"))
+                TakeLogin();
 
             foreach (string row in Regex.Split(tParse.ReplaceBadNames(html), "<tr class=('first bg'|bg)>").Skip(1))
             {
@@ -346,7 +415,7 @@ namespace JacRed.Controllers.CRON
                     #region Получаем Magnet
                     string magnet = null;
 
-                    if (parseMagnet)
+                    if (parseMagnet && Cookie != null)
                     {
                         if (tParse.db.ContainsKey(url) && _tcache?.magnet != null)
                         {
@@ -355,7 +424,7 @@ namespace JacRed.Controllers.CRON
                         else
                         {
                             // Получаем Инфо хеш
-                            string srv_details = await HttpClient.Post($"http://kinozal.tv/get_srv_details.php?id={id}&action=2", $"id={id}&action=2", AppInit.kinozalCookie, useproxy: true);
+                            string srv_details = await HttpClient.Post($"{AppInit.conf.Kinozal.host}/get_srv_details.php?id={id}&action=2", $"id={id}&action=2", Cookie, useproxy: AppInit.conf.Kinozal.useproxy);
                             if (srv_details != null)
                             {
                                 // Инфо хеш
@@ -433,6 +502,12 @@ namespace JacRed.Controllers.CRON
 
         async public Task<string> parseMagnet()
         {
+            if (Cookie == null)
+            {
+                TakeLogin();
+                return "TakeLogin";
+            }
+
             if (_parseMagnetWork)
                 return "work";
 
@@ -445,7 +520,7 @@ namespace JacRed.Controllers.CRON
                     string Id = Regex.Match(torrent.Key, "\\?id=([0-9]+)").Groups[1].Value;
 
                     // Получаем Инфо хеш
-                    string srv_details = await HttpClient.Post($"http://kinozal.tv/get_srv_details.php?id={Id}&action=2", $"id={Id}&action=2", "__cfduid=d476ac2d9b5e18f2b67707b47ebd9b8cd1560164391; uid=20520283; pass=ouV5FJdFCd;", useproxy: true);
+                    string srv_details = await HttpClient.Post($"{AppInit.conf.Kinozal.host}/get_srv_details.php?id={Id}&action=2", $"id={Id}&action=2", Cookie, useproxy: AppInit.conf.Kinozal.useproxy);
                     if (srv_details != null)
                     {
                         // Инфо хеш
