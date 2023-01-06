@@ -101,9 +101,6 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
 
@@ -114,7 +111,7 @@ namespace JacRed.Controllers.CRON
                             if (countreset > 2)
                                 continue;
 
-                            await Task.Delay(5000);
+                            await Task.Delay(12_000); // 5 запросов в минуту
                             countreset++;
                             goto reset;
                         }

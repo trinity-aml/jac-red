@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace JacRed.Controllers
 {
-    //[Route("cron/torrents/[action]")]
+    [Route("/cron/torrents/[action]")]
     public class TorrentsDbController : BaseController
     {
         #region UpdateSizeInfo
