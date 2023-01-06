@@ -15,7 +15,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/torrentby/[action]")]
+    [Route("/cron/torrentby/[action]")]
     public class TorrentByController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/torrentby_taskParse.json"));
@@ -67,7 +67,7 @@ namespace JacRed.Controllers.CRON
             foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"http://torrent.by/{cat}/", timeoutSeconds: 10, useproxy: true);
+                string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.host}/{cat}/", timeoutSeconds: 10, useproxy: AppInit.conf.TorrentBy.useproxy);
                 if (html == null)
                     continue;
 
@@ -110,11 +110,10 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
+
+                        await Task.Delay(AppInit.conf.TorrentBy.parseDelay);
 
                         bool res = await parsePage(task.Key, val.page);
                         if (res)
@@ -133,7 +132,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"http://torrent.by/{cat}/?page={page}", useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.host}/{cat}/?page={page}", useproxy: AppInit.conf.TorrentBy.useproxy);
             if (html == null)
                 return false;
 
@@ -184,7 +183,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName) || string.IsNullOrWhiteSpace(magnet))
                     continue;
 
-                url = "http://torrent.by/" + url;
+                url = $"{AppInit.conf.TorrentBy.host}/{url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -232,8 +231,8 @@ namespace JacRed.Controllers.CRON
                 else if (cat == "serials")
                 {
                     #region Сериалы
-                    // Перевал / Der Pass / Pagan Peak [S01] (2018)
-                    var g = Regex.Match(title, "^([^/\\(\\[]+) / [^/]+ / ([^/\\(\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                    // Голяк / Без гроша / Без денег / Brassic [S04] (2022) WEB-DLRip | Ozz
+                    var g = Regex.Match(title, "^([^/\\(\\[]+) / [^/]+ / [^/]+ / ([^/\\(\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
                     if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                     {
                         name = g[1].Value;
@@ -244,8 +243,8 @@ namespace JacRed.Controllers.CRON
                     }
                     else
                     {
-                        // Стража / The Watch [01x01-05 из 08] (2020)
-                        g = Regex.Match(title, "^([^/\\(\\[]+) / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                        // Перевал / Der Pass / Pagan Peak [S01] (2018)
+                        g = Regex.Match(title, "^([^/\\(\\[]+) / [^/]+ / ([^/\\(\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
                         if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                         {
                             name = g[1].Value;
@@ -256,12 +255,25 @@ namespace JacRed.Controllers.CRON
                         }
                         else
                         {
-                            // Стажёры [01-10 из 24] (2019)
-                            g = Regex.Match(title, "^([^/\\(\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                            // Стража / The Watch [01x01-05 из 08] (2020)
+                            g = Regex.Match(title, "^([^/\\(\\[]+) / ([^/\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+                            if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
+                            {
+                                name = g[1].Value;
+                                originalname = g[2].Value;
 
-                            name = g[1].Value;
-                            if (int.TryParse(g[2].Value, out int _yer))
-                                relased = _yer;
+                                if (int.TryParse(g[3].Value, out int _yer))
+                                    relased = _yer;
+                            }
+                            else
+                            {
+                                // Стажёры [01-10 из 24] (2019)
+                                g = Regex.Match(title, "^([^/\\(\\[]+) \\[[^\\]]+\\] +\\(([0-9]{4})(\\)|-)").Groups;
+
+                                name = g[1].Value;
+                                if (int.TryParse(g[2].Value, out int _yer))
+                                    relased = _yer;
+                            }
                         }
                     }
                     #endregion

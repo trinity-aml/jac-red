@@ -104,19 +104,11 @@ namespace JacRed.Controllers.CRON
                         if (DateTime.Today == val.updateTime)
                             continue;
 
-                        int countreset = 0;
-                        reset: bool res = await parsePage(task.Key, val.page);
-                        if (!res)
-                        {
-                            if (countreset > 2)
-                                continue;
+                        await Task.Delay(AppInit.conf.Rutor.parseDelay);
 
-                            await Task.Delay(AppInit.conf.Rutor.parseDelay);
-                            countreset++;
-                            goto reset;
-                        }
-
-                        val.updateTime = DateTime.Today;
+                        bool res = await parsePage(task.Key, val.page);
+                        if (res)
+                            val.updateTime = DateTime.Today;
                     }
                 }
             }
