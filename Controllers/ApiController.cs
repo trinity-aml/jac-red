@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using JacRed.Engine.CORE;
 using System.Text.RegularExpressions;
 using JacRed.Engine;
-using JacRed.Models.TorrServer;
 
 namespace JacRed.Controllers
 {
@@ -392,27 +391,6 @@ namespace JacRed.Controllers
                 query = query.Where(i => i.seasons.Contains((int)season));
             #endregion
 
-            #region getMediaInfo
-            List<MediaInfo> getMediaInfo(string magnet)
-            {
-                if (magnet != null)
-                {
-                    #region Обновляем magnet
-                    if (magnet.Contains("magnet:?xt=urn"))
-                        magnet = Regex.Match(magnet, "urn:btih:([a-zA-Z0-9]+)").Groups[1].Value;
-
-                    magnet = magnet.ToLower();
-                    #endregion
-
-                    // Отдаем кеш
-                    if (TorrServerAPI.db.TryGetValue(magnet, out List<MediaInfo> _cache))
-                        return _cache;
-                }
-
-                return null;
-            }
-            #endregion
-
             return Json(query.Where(i => i.sid > 0 || i.trackerName == "toloka").Take(5_000).Select(i => new
             {
                 tracker = i.trackerName,
@@ -431,13 +409,7 @@ namespace JacRed.Controllers
                 i.quality,
                 i.voices,
                 i.seasons,
-                i.types,
-                media = getMediaInfo(i.magnet)?.Select(m => new
-                {
-                    tid = m.Id,
-                    path = m.Path,
-                    size = m.FileSize,
-                })
+                i.types
             }));
         }
         #endregion

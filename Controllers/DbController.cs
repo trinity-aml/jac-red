@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using JacRed.Engine.Parse;
 using JacRed.Engine;
-using JacRed.Engine.CORE;
 
 namespace JacRed.Controllers
 {
@@ -20,7 +19,6 @@ namespace JacRed.Controllers
             try
             {
                 tParse.SaveAndUpdateDB();
-                TorrServerAPI.SaveDB();
             }
             catch { }
 

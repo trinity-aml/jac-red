@@ -20,7 +20,7 @@ namespace JacRed
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseKestrel(op => op.Listen(IPAddress.Any, 9117))
+                    webBuilder.UseKestrel(op => op.Listen(IPAddress.Any, AppInit.conf.listenport))
                     .UseStartup<Startup>();
                 });
     }

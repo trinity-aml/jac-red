@@ -4,10 +4,8 @@ using System.Text.RegularExpressions;
 using JacRed.Engine.CORE;
 using JacRed.Engine.Parse;
 using System.Linq;
-using System.Threading.Tasks;
 using System;
 using JacRed.Engine;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace JacRed.Controllers
 {
@@ -318,37 +316,6 @@ namespace JacRed.Controllers
             catch { }
 
             workUpdateDetails = false;
-            return "ok";
-        }
-        #endregion
-
-        #region UpdateTorrMediaCache
-        static bool workUpdateTorrMediaCache = false;
-
-        async public Task<string> UpdateTorrMediaCache()
-        {
-            if (workUpdateTorrMediaCache)
-                return "wokr";
-
-            workUpdateTorrMediaCache = true;
-
-            DateTime stopTime = DateTime.Now.AddHours(1);
-
-            foreach (var item in tParse.db.Select(i => i.Value).OrderByDescending(i => i.createTime))
-            {
-                if (DateTime.Now > stopTime)
-                    break;
-
-                string memKey = $"TorrentsDbController:UpdateTorrMediaCache:{item.magnet}";
-                if (memoryCache.TryGetValue(memKey, out _))
-                    continue;
-
-                var medias = await TorrServerAPI.MediaFiles(memoryCache, item.magnet);
-                if (medias == null)
-                    memoryCache.Set(memKey, 0, DateTime.Now.AddDays(5));
-            }
-
-            workUpdateTorrMediaCache = false;
             return "ok";
         }
         #endregion
