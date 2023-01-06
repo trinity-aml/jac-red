@@ -15,6 +15,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\css\icheck-material.css" />
+    <None Include="wwwroot\css\microtip.min.css" />
+    <None Include="wwwroot\css\styles.css" />
+    <None Include="wwwroot\img\down.svg" />
+    <None Include="wwwroot\img\logo.svg" />
+    <None Include="wwwroot\img\magnet.svg" />
+    <None Include="wwwroot\img\search.svg" />
+    <None Include="wwwroot\img\up.svg" />
+    <None Include="wwwroot\index.html" />
+    <None Include="wwwroot\js\jquery.quicksearch.min.js" />
+    <None Include="wwwroot\js\script.js" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BencodeNET" Version="4.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>

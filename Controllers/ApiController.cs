@@ -7,14 +7,24 @@ using Newtonsoft.Json;
 using JacRed.Engine.CORE;
 using System.Text.RegularExpressions;
 using JacRed.Engine;
+using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Caching.Memory;
+using System.Threading.Tasks;
+using System;
 
 namespace JacRed.Controllers
 {
     public class ApiController : BaseController
     {
+        [Route("/")]
+        public ActionResult Index()
+        {
+            return LocalRedirect("/index.html");
+        }
+
         #region Jackett
         [Route("/api/v2.0/indexers/{status}/results")]
-        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
+        public ActionResult Jackett(string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
             var torrents = new List<TorrentDetails>();
 
@@ -308,9 +318,30 @@ namespace JacRed.Controllers
         #endregion
 
         #region Torrents
-        //[Route("api/v1.0/torrents")]
-        public JsonResult Torrents(string search, string altname, bool exact, string type, string sort, string tracker, string voice, string videotype, long relased, long quality, long season)
+        [Route("/api/v1.0/torrents")]
+        async public Task<JsonResult> Torrents(string search, string altname, bool exact, string type, string sort, string tracker, string voice, string videotype, long relased, long quality, long season)
         {
+            #region search kp/imdb
+            if (!string.IsNullOrWhiteSpace(search) && Regex.IsMatch(search.Trim(), "^(tt|kp)[0-9]+$"))
+            {
+                string memkey = $"api/v1.0/torrents:{search}";
+                if (!memoryCache.TryGetValue(memkey, out string original_name))
+                {
+                    search = search.Trim();
+                    string uri = $"&imdb={search}";
+                    if (search.StartsWith("kp"))
+                        uri = $"&kp={search.Remove(0, 2)}";
+
+                    var root = await HttpClient.Get<JObject>("https://api.alloha.tv/?token=04941a9a3ca3ac16e2b4327347bbc1" + uri, timeoutSeconds: 8);
+                    original_name = root?.Value<JObject>("data")?.Value<string>("original_name");
+
+                    memoryCache.Set(memkey, original_name ?? string.Empty, DateTime.Now.AddDays(1));
+                }
+
+                search = original_name;
+            }
+            #endregion
+
             #region Выборка 
             IEnumerable<TorrentDetails> query = null;
             var torrents = new List<TorrentDetails>();
