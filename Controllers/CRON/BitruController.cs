@@ -14,7 +14,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/bitru/[action]")]
+    [Route("/cron/bitru/[action]")]
     public class BitruController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/bitru_taskParse.json"));
@@ -56,7 +56,7 @@ namespace JacRed.Controllers.CRON
             foreach (string cat in new List<string>() { "movie", "serial" })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"https://bitru.org/browse.php?tmp={cat}", timeoutSeconds: 10, useproxy: true);
+                string html = await HttpClient.Get($"{AppInit.conf.Bitru.host}/browse.php?tmp={cat}", timeoutSeconds: 10, useproxy: AppInit.conf.Bitru.useproxy);
                 if (html == null)
                     continue;
 
@@ -99,11 +99,10 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
+
+                        await Task.Delay(AppInit.conf.Bitru.parseDelay);
 
                         bool res = await parsePage(task.Key, val.page);
                         if (res)
@@ -122,8 +121,8 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, bool parseMagnet = false)
         {
-            string html = await HttpClient.Get($"https://bitru.org/browse.php?tmp={cat}&page={page}", useproxy: true);
-            if (html == null || !html.Contains(" - bitru.org</title>"))
+            string html = await HttpClient.Get($"{AppInit.conf.Bitru.host}/browse.php?tmp={cat}&page={page}", useproxy: AppInit.conf.Bitru.useproxy);
+            if (html == null || !html.Contains("id=\"logo\""))
                 return false;
 
             foreach (string row in tParse.ReplaceBadNames(html).Split("<div class=\"b-title\"").Skip(1))
@@ -173,7 +172,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName))
                     continue;
 
-                url = "http://bitru.org/" + url;
+                url = $"{AppInit.conf.Bitru.host}/{url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -318,7 +317,7 @@ namespace JacRed.Controllers.CRON
                         }
                         else
                         {
-                            byte[] torrent = await HttpClient.Download($"https://bitru.org/download.php?id={id}", referer: $"https://bitru.org/details.php?id={id}", useproxy: true);
+                            byte[] torrent = await HttpClient.Download($"{AppInit.conf.Bitru.host}/download.php?id={id}", referer: $"{AppInit.conf.Bitru.host}/details.php?id={id}", useproxy: AppInit.conf.Bitru.useproxy);
                             magnet = BencodeTo.Magnet(torrent);
                         }
                     }
@@ -376,9 +375,9 @@ namespace JacRed.Controllers.CRON
             {
                 foreach (var torrent in tParse.db.Where(i => i.Value.trackerName == "bitru" && string.IsNullOrWhiteSpace(i.Value.magnet)))
                 {
-                    string url = torrent.Key.Replace("http:", "https:");
+                    string url = torrent.Key;
 
-                    byte[] _t = await HttpClient.Download(url.Replace("/details.php", "/download.php"), referer: url, useproxy: true);
+                    byte[] _t = await HttpClient.Download(url.Replace("/details.php", "/download.php"), referer: url, useproxy: AppInit.conf.Bitru.useproxy);
                     string magnet = BencodeTo.Magnet(_t);
 
                     if (!string.IsNullOrWhiteSpace(magnet))
