@@ -23,6 +23,8 @@
 
         public bool useproxy { get; set; }
 
+        public int parseDelay = 12_000; // 5 запросов в минуту
+
         public LoginSettings login { get; set; } = new LoginSettings();
     }
 }

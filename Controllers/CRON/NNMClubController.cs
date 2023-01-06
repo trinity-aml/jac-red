@@ -14,7 +14,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/nnmclub/[action]")]
+    [Route("/cron/nnmclub/[action]")]
     public class NNMClubController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/nnmclub_taskParse.json"));
@@ -69,7 +69,7 @@ namespace JacRed.Controllers.CRON
             // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
             foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
             {
-                string html = await HttpClient.Get("https://nnmclub.to/forum/portal.php?c={cat}", encoding: Encoding.GetEncoding(1251), timeoutSeconds: 10);
+                string html = await HttpClient.Get($"{AppInit.conf.NNMClub.host}/forum/portal.php?c={cat}", encoding: Encoding.GetEncoding(1251), timeoutSeconds: 10, useproxy: AppInit.conf.NNMClub.useproxy);
                 if (html == null || !html.Contains("NNM-Club</title>"))
                     continue;
 
@@ -112,9 +112,6 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
 
@@ -125,7 +122,7 @@ namespace JacRed.Controllers.CRON
                             if (countreset > 2)
                                 continue;
 
-                            await Task.Delay(5000);
+                            await Task.Delay(AppInit.conf.NNMClub.parseDelay);
                             countreset++;
                             goto reset;
                         }
@@ -145,7 +142,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get("https://nnmclub.to/forum/portal.php?c={cat}&start={page * 20}", encoding: Encoding.GetEncoding(1251));
+            string html = await HttpClient.Get($"{AppInit.conf.NNMClub.host}/forum/portal.php?c={cat}&start={page * 20}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.NNMClub.useproxy);
             if (html == null || !html.Contains("NNM-Club</title>"))
                 return false;
 
@@ -185,7 +182,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName))
                     continue;
 
-                url = "https://nnmclub.to/" + url;
+                url = $"{AppInit.conf.NNMClub.host}/{url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -217,8 +214,8 @@ namespace JacRed.Controllers.CRON
                             if (int.TryParse(g[3].Value, out int _yer))
                                 relased = _yer;
                         }
-                        else 
-                        { 
+                        else
+                        {
                             // Академия монстров / Escuela de Miedo / Cranston Academy: Monster Zone (2020)
                             g = Regex.Match(title, "^([^/\\(\\|]+) / [^/\\(\\|]+ / ([^/\\(\\|]+) \\(([0-9]{4})(-[0-9]{4})?\\)").Groups;
                             if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))

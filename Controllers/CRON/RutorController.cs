@@ -111,7 +111,7 @@ namespace JacRed.Controllers.CRON
                             if (countreset > 2)
                                 continue;
 
-                            await Task.Delay(12_000); // 5 запросов в минуту
+                            await Task.Delay(AppInit.conf.Rutor.parseDelay);
                             countreset++;
                             goto reset;
                         }
