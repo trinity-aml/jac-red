@@ -11,13 +11,78 @@ using JacRed.Engine.Parse;
 using JacRed.Models.tParse;
 using IO = System.IO;
 using JacRed.Engine;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/rutracker/[action]")]
+    [Route("/cron/rutracker/[action]")]
     public class RutrackerController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/rutracker_taskParse.json"));
+
+        #region Cookie / TakeLogin
+        static string Cookie;
+
+        async ValueTask<bool> TakeLogin()
+        {
+            string authKey = "rutracker:TakeLogin()";
+            if (memoryCache.TryGetValue(authKey, out _))
+                return false;
+
+            memoryCache.Set(authKey, 0, TimeSpan.FromMinutes(2));
+
+            try
+            {
+                var clientHandler = new System.Net.Http.HttpClientHandler()
+                {
+                    AllowAutoRedirect = false
+                };
+
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+                using (var client = new System.Net.Http.HttpClient(clientHandler))
+                {
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    client.MaxResponseContentBufferSize = 2000000; // 2MB
+                    client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
+
+                    var postParams = new Dictionary<string, string>
+                    {
+                        { "login_username", AppInit.conf.Rutracker.login.u },
+                        { "login_password", AppInit.conf.Rutracker.login.p },
+                        { "login", "Вход" }
+                    };
+
+                    using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
+                    {
+                        using (var response = await client.PostAsync($"{AppInit.conf.Rutracker.host}/forum/login.php", postContent))
+                        {
+                            if (response.Headers.TryGetValues("Set-Cookie", out var cook))
+                            {
+                                string session = null;
+                                foreach (string line in cook)
+                                {
+                                    if (string.IsNullOrWhiteSpace(line))
+                                        continue;
+
+                                    if (line.Contains("bb_session="))
+                                        session = new Regex("bb_session=([^;]+)(;|$)").Match(line).Groups[1].Value;
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(session))
+                                {
+                                    Cookie = $"bb_ssl=1; bb_session={session};";
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return false;
+        }
+        #endregion
 
 
         #region Parse
@@ -98,7 +163,7 @@ namespace JacRed.Controllers.CRON
             })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"http://rutracker.net/forum/viewforum.php?f={cat}", timeoutSeconds: 10, useproxy: true);
+                string html = await HttpClient.Get($"{AppInit.conf.Rutracker.host}/forum/viewforum.php?f={cat}", timeoutSeconds: 10, useproxy: AppInit.conf.Rutracker.useproxy);
                 if (html == null)
                     continue;
 
@@ -141,11 +206,10 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
+
+                        await Task.Delay(AppInit.conf.Rutracker.parseDelay);
 
                         bool res = await parsePage(task.Key, val.page);
                         if (res)
@@ -164,8 +228,16 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, bool parseMagnet = false)
         {
-            string html = await HttpClient.Get("http://rutracker.net" + $"/forum/viewforum.php?f={cat}{(page == 0 ? "" : $"&start={page * 50}")}", useproxy: true);
-            if (html == null || !html.Contains("RuTracker.org</title>"))
+            #region Авторизация
+            if (Cookie == null)
+            {
+                if (await TakeLogin() == false)
+                    return false;
+            }
+            #endregion
+
+            string html = await HttpClient.Get($"{AppInit.conf.Rutracker.host}/forum/viewforum.php?f={cat}{(page == 0 ? "" : $"&start={page * 50}")}", cookie: Cookie, useproxy: AppInit.conf.Rutracker.useproxy);
+            if (html == null || !html.Contains("id=\"logged-in-username\""))
                 return false;
 
             foreach (string row in tParse.ReplaceBadNames(html).Split("class=\"torTopic\"").Skip(1))
@@ -199,7 +271,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName))
                     continue;
 
-                url = "http://rutracker.net/forum/viewtopic.php?t=" + url;
+                url = $"{AppInit.conf.Rutracker.host}/forum/viewtopic.php?t={url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -255,8 +327,8 @@ namespace JacRed.Controllers.CRON
 
                     if (title.Contains("Сезон:"))
                     {
-                        // Уравнитель / Великий уравнитель / The Equalizer / Сезон: 1 / Серии: 1-3 из 4 (Лиз Фридлендер, Солван Наим) [2021, США, Боевик, триллер, драма, криминал, детектив, WEB-DLRip] MVO (TVShows) + Original
-                        var g = Regex.Match(title, "^([^/\\(\\[]+) / [^/\\(\\[]+ / ([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
+                        // Голяк / Без гроша / Без денег / Brassic / Сезон: 4 / Серии: 1-8 из 8 (Джон Райт, Дэниэл О’Хара, Сауль Метцштайн, Джон Хардвик) [2022, Великобритания, Комедия, криминал, WEB-DLRip] MVO (Ozz) + Original + Sub (Rus, Ukr, Eng)
+                        var g = Regex.Match(title, "^([^/\\(\\[]+) / [^/\\(\\[]+ / [^/\\(\\[]+ / ([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
                         if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                         {
                             name = g[1].Value;
@@ -267,8 +339,8 @@ namespace JacRed.Controllers.CRON
                         }
                         else
                         {
-                            // 911 служба спасения / 9-1-1 / Сезон: 4 / Серии: 1-6 из 9 (Брэдли Букер, Дженнифер Линч, Гвинет Хердер-Пэйтон) [2021, США, Боевик, триллер, драма, WEB-DLRip] MVO (LostFilm) + Original
-                            g = Regex.Match(title, "^([^/\\(\\[]+) / ([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
+                            // Уравнитель / Великий уравнитель / The Equalizer / Сезон: 1 / Серии: 1-3 из 4 (Лиз Фридлендер, Солван Наим) [2021, США, Боевик, триллер, драма, криминал, детектив, WEB-DLRip] MVO (TVShows) + Original
+                            g = Regex.Match(title, "^([^/\\(\\[]+) / [^/\\(\\[]+ / ([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
                             if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                             {
                                 name = g[1].Value;
@@ -279,13 +351,26 @@ namespace JacRed.Controllers.CRON
                             }
                             else
                             {
-                                // Петербургский роман / Сезон: 1 / Серии: 1-8 из 8 (Александр Муратов) [2018, мелодрама, HDTV 1080i]
-                                g = Regex.Match(title, "^([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
-                                if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value))
+                                // 911 служба спасения / 9-1-1 / Сезон: 4 / Серии: 1-6 из 9 (Брэдли Букер, Дженнифер Линч, Гвинет Хердер-Пэйтон) [2021, США, Боевик, триллер, драма, WEB-DLRip] MVO (LostFilm) + Original
+                                g = Regex.Match(title, "^([^/\\(\\[]+) / ([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
+                                if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                                 {
                                     name = g[1].Value;
-                                    if (int.TryParse(g[2].Value, out int _yer))
+                                    originalname = g[2].Value;
+
+                                    if (int.TryParse(g[3].Value, out int _yer))
                                         relased = _yer;
+                                }
+                                else
+                                {
+                                    // Петербургский роман / Сезон: 1 / Серии: 1-8 из 8 (Александр Муратов) [2018, мелодрама, HDTV 1080i]
+                                    g = Regex.Match(title, "^([^/\\(\\[]+) / Сезон: [^/]+ / [^\\(\\[]+ \\([^\\)]+\\) \\[([0-9]+)(,|-)").Groups;
+                                    if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value))
+                                    {
+                                        name = g[1].Value;
+                                        if (int.TryParse(g[2].Value, out int _yer))
+                                            relased = _yer;
+                                    }
                                 }
                             }
                         }
@@ -370,7 +455,7 @@ namespace JacRed.Controllers.CRON
                         }
                         else
                         {
-                            var fullNews = await HttpClient.Get(url, useproxy: true);
+                            var fullNews = await HttpClient.Get(url, useproxy: AppInit.conf.Rutracker.useproxy);
                             if (fullNews != null)
                                 magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"magnet-link\"").Groups[1].Value;
                         }
@@ -547,7 +632,7 @@ namespace JacRed.Controllers.CRON
             {
                 foreach (var torrent in tParse.db.Where(i => i.Value.trackerName == "rutracker" && string.IsNullOrWhiteSpace(i.Value.magnet)))
                 {
-                    var fullNews = await HttpClient.Get(torrent.Key, useproxy: true);
+                    var fullNews = await HttpClient.Get(torrent.Key, useproxy: AppInit.conf.Rutracker.useproxy);
                     if (fullNews != null)
                     {
                         string magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"magnet-link\"").Groups[1].Value;
