@@ -67,7 +67,7 @@ namespace JacRed
 
         public TrackerSettings TorrentBy = new TrackerSettings("https://torrent.by", priority: "torrent");
 
-        public TrackerSettings Kinozal = new TrackerSettings("http://kinozal.tv");
+        public TrackerSettings Kinozal = new TrackerSettings("https://kinozal.tv");
 
         public TrackerSettings NNMClub = new TrackerSettings("https://nnmclub.to");
 
