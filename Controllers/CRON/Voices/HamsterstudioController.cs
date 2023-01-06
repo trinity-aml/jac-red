@@ -12,7 +12,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/hamsterstudio/[action]")]
+    //[Route("cron/hamsterstudio/[action]")]
     public class HamsterstudioController : BaseController
     {
         static string cookie { get; set; }

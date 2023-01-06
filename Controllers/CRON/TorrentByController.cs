@@ -15,7 +15,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/torrentby/[action]")]
+    //[Route("cron/torrentby/[action]")]
     public class TorrentByController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/torrentby_taskParse.json"));

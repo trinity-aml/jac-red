@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/animelayer/[action]")]
+    //[Route("cron/animelayer/[action]")]
     public class AnimeLayerController : BaseController
     {
         #region TakeLogin

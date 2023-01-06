@@ -11,7 +11,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/hdrezka/[action]")]
+    //[Route("cron/hdrezka/[action]")]
     public class HDRezkaController : BaseController
     {
         #region Parse

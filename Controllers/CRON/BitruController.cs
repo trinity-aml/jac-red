@@ -14,7 +14,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/bitru/[action]")]
+    //[Route("cron/bitru/[action]")]
     public class BitruController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/bitru_taskParse.json"));

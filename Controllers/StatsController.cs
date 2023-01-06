@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers
 {
-    [Route("stats/[action]")]
+    //[Route("stats/[action]")]
     public class StatsController : Controller
     {
         #region Torrents

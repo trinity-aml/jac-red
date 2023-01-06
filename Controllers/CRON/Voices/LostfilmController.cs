@@ -12,7 +12,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/lostfilm/[action]")]
+    //[Route("cron/lostfilm/[action]")]
     public class LostfilmController : BaseController
     {
         #region LostfilmController

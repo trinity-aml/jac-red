@@ -15,7 +15,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/toloka/[action]")]
+    //[Route("cron/toloka/[action]")]
     public class TolokaController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/toloka_taskParse.json"));

@@ -13,7 +13,7 @@ namespace JacRed.Controllers
     public class ApiController : BaseController
     {
         #region Jackett
-        [Route("api/v2.0/indexers/{status}//results")]
+        [Route("/api/v2.0/indexers/{status}/results")]
         public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
             var torrents = new List<TorrentDetails>();
@@ -308,7 +308,7 @@ namespace JacRed.Controllers
         #endregion
 
         #region Torrents
-        [Route("api/v1.0/torrents")]
+        //[Route("api/v1.0/torrents")]
         public JsonResult Torrents(string search, string altname, bool exact, string type, string sort, string tracker, string voice, string videotype, long relased, long quality, long season)
         {
             #region Выборка 

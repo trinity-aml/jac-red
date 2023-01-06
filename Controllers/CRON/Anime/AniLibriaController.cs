@@ -10,7 +10,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/anilibria/[action]")]
+    //[Route("cron/anilibria/[action]")]
     public class AniLibriaController : BaseController
     {
         #region Parse

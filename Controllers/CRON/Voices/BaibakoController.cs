@@ -13,7 +13,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/baibako/[action]")]
+    //[Route("cron/baibako/[action]")]
     public class BaibakoController : BaseController
     {
         static string cookie { get; set; }

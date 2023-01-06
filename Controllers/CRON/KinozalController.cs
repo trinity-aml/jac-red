@@ -14,7 +14,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/kinozal/[action]")]
+    //[Route("cron/kinozal/[action]")]
     public class KinozalController : BaseController
     {
         static Dictionary<string, Dictionary<string, List<TaskParse>>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<TaskParse>>>>(IO.File.ReadAllText("Data/temp/kinozal_taskParse.json"));

@@ -14,7 +14,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/selezen/[action]")]
+    //[Route("cron/selezen/[action]")]
     public class SelezenController : BaseController
     {
         static List<TaskParse> taskParse = JsonConvert.DeserializeObject<List<TaskParse>>(IO.File.ReadAllText("Data/temp/selezen_taskParse.json"));

@@ -4,7 +4,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers
 {
-    [Route("jsondb/[action]")]
+    [Route("/jsondb/[action]")]
     public class DbController : BaseController
     {
         static bool _saveDbWork = false;

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/animedia/[action]")]
+    //[Route("cron/animedia/[action]")]
     public class AnimediaController : BaseController
     {
         #region Parse

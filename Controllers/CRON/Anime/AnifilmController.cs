@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers.CRON
 {
-    [Route("cron/anifilm/[action]")]
+    //[Route("cron/anifilm/[action]")]
     public class AnifilmController : BaseController
     {
         #region Parse
