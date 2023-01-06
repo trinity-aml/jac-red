@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using JacRed.Models.AppConf;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace JacRed.Engine.CORE
@@ -15,24 +17,41 @@ namespace JacRed.Engine.CORE
         #region webProxy
         static ConcurrentBag<string> proxyRandomList = new ConcurrentBag<string>();
 
-        static WebProxy webProxy()
+        public static WebProxy webProxy()
         {
             if (proxyRandomList.Count == 0)
             {
-                foreach (string ip in AppInit.proxyList.OrderBy(a => Guid.NewGuid()).ToArray())
+                foreach (string ip in AppInit.conf.proxy.list.OrderBy(a => Guid.NewGuid()).ToArray())
                     proxyRandomList.Add(ip);
             }
 
             proxyRandomList.TryTake(out string proxyip);
-            return new WebProxy(proxyip, true, null);
+
+            ICredentials credentials = null;
+
+            if (AppInit.conf.proxy.useAuth)
+                credentials = new NetworkCredential(AppInit.conf.proxy.username, AppInit.conf.proxy.password);
+
+            return new WebProxy(proxyip, AppInit.conf.proxy.BypassOnLocal, null, credentials);
+        }
+
+
+        static WebProxy webProxy(ProxySettings p)
+        {
+            ICredentials credentials = null;
+
+            if (p.useAuth)
+                credentials = new NetworkCredential(p.username, p.password);
+
+            return new WebProxy(p.list.OrderBy(a => Guid.NewGuid()).First(), p.BypassOnLocal, null, credentials);
         }
         #endregion
 
 
         #region Get
-        async public static ValueTask<string> Get(string url, Encoding encoding = default, string cookie = null, string referer = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, long MaxResponseContentBufferSize = 0, bool useproxy = false, WebProxy proxy = null)
+        async public static ValueTask<string> Get(string url, Encoding encoding = default, string cookie = null, string referer = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, long MaxResponseContentBufferSize = 0, bool useproxy = false, WebProxy proxy = null, int httpversion = 1)
         {
-            return (await BaseGetAsync(url, encoding, cookie: cookie, referer: referer, timeoutSeconds: timeoutSeconds, addHeaders: addHeaders, MaxResponseContentBufferSize: MaxResponseContentBufferSize, useproxy: useproxy, proxy: proxy)).content;
+            return (await BaseGetAsync(url, encoding, cookie: cookie, referer: referer, timeoutSeconds: timeoutSeconds, addHeaders: addHeaders, MaxResponseContentBufferSize: MaxResponseContentBufferSize, useproxy: useproxy, proxy: proxy, httpversion: httpversion)).content;
         }
         #endregion
 
@@ -58,7 +77,7 @@ namespace JacRed.Engine.CORE
         #endregion
 
         #region BaseGetAsync
-        async public static ValueTask<(string content, HttpResponseMessage response)> BaseGetAsync(string url, Encoding encoding = default, string cookie = null, string referer = null, int timeoutSeconds = 15, long MaxResponseContentBufferSize = 0, List<(string name, string val)> addHeaders = null, bool useproxy = false, WebProxy proxy = null)
+        async public static ValueTask<(string content, HttpResponseMessage response)> BaseGetAsync(string url, Encoding encoding = default, string cookie = null, string referer = null, int timeoutSeconds = 15, long MaxResponseContentBufferSize = 0, List<(string name, string val)> addHeaders = null, bool useproxy = false, WebProxy proxy = null, int httpversion = 1)
         {
             try
             {
@@ -68,11 +87,30 @@ namespace JacRed.Engine.CORE
                 };
 
                 handler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-                if (AppInit.proxyList != null && useproxy)
+
+                #region proxy
+                if (AppInit.conf.proxy.list != null && AppInit.conf.proxy.list.Count > 0 && useproxy)
                 {
                     handler.UseProxy = true;
                     handler.Proxy = proxy ?? webProxy();
                 }
+
+                if (AppInit.conf.globalproxy != null && AppInit.conf.globalproxy.Count > 0)
+                {
+                    foreach (var p in AppInit.conf.globalproxy)
+                    {
+                        if (p.list == null || p.list.Count == 0)
+                            continue;
+
+                        if (Regex.IsMatch(url, p.pattern, RegexOptions.IgnoreCase))
+                        {
+                            handler.UseProxy = true;
+                            handler.Proxy = webProxy(p);
+                            break;
+                        }
+                    }
+                }
+                #endregion
 
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
@@ -92,7 +130,12 @@ namespace JacRed.Engine.CORE
                             client.DefaultRequestHeaders.Add(item.name, item.val);
                     }
 
-                    using (HttpResponseMessage response = await client.GetAsync(url))
+                    var req = new HttpRequestMessage(HttpMethod.Get, url)
+                    {
+                        Version = new Version(httpversion, 0)
+                    };
+
+                    using (HttpResponseMessage response = await client.SendAsync(req))
                     {
                         if (response.StatusCode != HttpStatusCode.OK)
                             return (null, response);
@@ -147,11 +190,30 @@ namespace JacRed.Engine.CORE
                 };
 
                 handler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-                if (AppInit.proxyList != null && useproxy)
+
+                #region proxy
+                if (AppInit.conf.proxy.list != null && AppInit.conf.proxy.list.Count > 0 && useproxy)
                 {
                     handler.UseProxy = true;
                     handler.Proxy = proxy ?? webProxy();
                 }
+
+                if (AppInit.conf.globalproxy != null && AppInit.conf.globalproxy.Count > 0)
+                {
+                    foreach (var p in AppInit.conf.globalproxy)
+                    {
+                        if (p.list == null || p.list.Count == 0)
+                            continue;
+
+                        if (Regex.IsMatch(url, p.pattern, RegexOptions.IgnoreCase))
+                        {
+                            handler.UseProxy = true;
+                            handler.Proxy = webProxy(p);
+                            break;
+                        }
+                    }
+                }
+                #endregion
 
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
@@ -203,18 +265,21 @@ namespace JacRed.Engine.CORE
         #endregion
 
         #region Post<T>
-        async public static ValueTask<T> Post<T>(string url, string data, string cookie = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, bool useproxy = false, Encoding encoding = default, WebProxy proxy = null)
+        async public static ValueTask<T> Post<T>(string url, string data, string cookie = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, bool useproxy = false, Encoding encoding = default, WebProxy proxy = null, bool IgnoreDeserializeObject = false)
         {
-            return await Post<T>(url, new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded"), cookie: cookie, timeoutSeconds: timeoutSeconds, addHeaders: addHeaders, useproxy: useproxy, encoding: encoding, proxy: proxy);
+            return await Post<T>(url, new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded"), cookie: cookie, timeoutSeconds: timeoutSeconds, addHeaders: addHeaders, useproxy: useproxy, encoding: encoding, proxy: proxy, IgnoreDeserializeObject: IgnoreDeserializeObject);
         }
 
-        async public static ValueTask<T> Post<T>(string url, HttpContent data, string cookie = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, bool useproxy = false, Encoding encoding = default, WebProxy proxy = null)
+        async public static ValueTask<T> Post<T>(string url, HttpContent data, string cookie = null, int timeoutSeconds = 15, List<(string name, string val)> addHeaders = null, bool useproxy = false, Encoding encoding = default, WebProxy proxy = null, bool IgnoreDeserializeObject = false)
         {
             try
             {
                 string json = await Post(url, data, cookie: cookie, timeoutSeconds: timeoutSeconds, addHeaders: addHeaders, useproxy: useproxy, encoding: encoding, proxy: proxy);
                 if (json == null)
                     return default;
+
+                if (IgnoreDeserializeObject)
+                    return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings { Error = (se, ev) => { ev.ErrorContext.Handled = true; } });
 
                 return JsonConvert.DeserializeObject<T>(json);
             }
@@ -238,11 +303,30 @@ namespace JacRed.Engine.CORE
                 };
 
                 handler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-                if (useproxy)
+
+                #region proxy
+                if (AppInit.conf.proxy.list != null && AppInit.conf.proxy.list.Count > 0 && useproxy)
                 {
                     handler.UseProxy = true;
                     handler.Proxy = proxy ?? webProxy();
                 }
+
+                if (AppInit.conf.globalproxy != null && AppInit.conf.globalproxy.Count > 0)
+                {
+                    foreach (var p in AppInit.conf.globalproxy)
+                    {
+                        if (p.list == null || p.list.Count == 0)
+                            continue;
+
+                        if (Regex.IsMatch(url, p.pattern, RegexOptions.IgnoreCase))
+                        {
+                            handler.UseProxy = true;
+                            handler.Proxy = webProxy(p);
+                            break;
+                        }
+                    }
+                }
+                #endregion
 
                 using (var client = new System.Net.Http.HttpClient(handler))
                 {
