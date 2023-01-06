@@ -10,8 +10,6 @@ namespace JacRed
     public class AppInit
     {
         #region СНЕСТИ
-        public static string selezenCookie;
-
         public static string lostfilmCookie;
 
         public static (string u, string p) tolokaLogin;

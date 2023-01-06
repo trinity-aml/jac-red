@@ -11,29 +11,85 @@ using JacRed.Engine.Parse;
 using JacRed.Models.tParse;
 using IO = System.IO;
 using JacRed.Engine;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/selezen/[action]")]
+    [Route("/cron/selezen/[action]")]
     public class SelezenController : BaseController
     {
         static List<TaskParse> taskParse = JsonConvert.DeserializeObject<List<TaskParse>>(IO.File.ReadAllText("Data/temp/selezen_taskParse.json"));
+
+        #region Cookie / TakeLogin
+        static string Cookie;
+
+        async Task<bool> TakeLogin()
+        {
+            string authKey = "selezen:TakeLogin()";
+            if (memoryCache.TryGetValue(authKey, out _))
+                return false;
+
+            memoryCache.Set(authKey, 0, TimeSpan.FromMinutes(2));
+
+            try
+            {
+                var clientHandler = new System.Net.Http.HttpClientHandler()
+                {
+                    AllowAutoRedirect = false
+                };
+
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+                using (var client = new System.Net.Http.HttpClient(clientHandler))
+                {
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    client.MaxResponseContentBufferSize = 2000000; // 2MB
+                    client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
+
+                    var postParams = new Dictionary<string, string>
+                    {
+                        { "login_name", AppInit.conf.Selezen.login.u },
+                        { "login_password", AppInit.conf.Selezen.login.p },
+                        { "login_not_save", "1" },
+                        { "login", "submit" }
+                    };
+
+                    using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
+                    {
+                        using (var response = await client.PostAsync(AppInit.conf.Selezen.host, postContent))
+                        {
+                            if (response.Headers.TryGetValues("Set-Cookie", out var cook))
+                            {
+                                string PHPSESSID = null;
+                                foreach (string line in cook)
+                                {
+                                    if (string.IsNullOrWhiteSpace(line))
+                                        continue;
+
+                                    if (line.Contains("PHPSESSID="))
+                                        PHPSESSID = new Regex("PHPSESSID=([^;]+)(;|$)").Match(line).Groups[1].Value;
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(PHPSESSID))
+                                {
+                                    Cookie = $"PHPSESSID={PHPSESSID}; _ym_isad=2;";
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return false;
+        }
+        #endregion
 
 
         #region Parse
         async public Task<string> Parse(int page = 1)
         {
-            int countreset = 0;
-            reset: bool res = await parsePage(page);
-            if (!res)
-            {
-                if (countreset > 2)
-                    return "error";
-
-                await Task.Delay(2000);
-                countreset++;
-                goto reset;
-            }
+            await parsePage(page);
 
             return "ok";
         }
@@ -43,12 +99,12 @@ namespace JacRed.Controllers.CRON
         async public Task<string> UpdateTasksParse()
         {
             // Получаем html
-            string html = await HttpClient.Get("https://selezen.net/", timeoutSeconds: 10, useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.Selezen.host}/relizy-ot-selezen/", timeoutSeconds: 10, useproxy: AppInit.conf.Selezen.useproxy);
             if (html == null)
                 return "html == null";
 
             // Максимальное количиство страниц
-            int.TryParse(Regex.Match(html, "<span class=\"nav_ext\">[^<]+</span> <a href=\"[^\"]+\">([0-9]+)</a>").Groups[1].Value, out int maxpages);
+            int.TryParse(Regex.Match(html, "<span class='page-link'>...</span></li> <li class='page-item'><a class='page-link' href=\"[^\"]+/page/[0-9]+/\">([0-9]+)</a></li>").Groups[1].Value, out int maxpages);
 
             if (maxpages > 0)
             {
@@ -79,11 +135,10 @@ namespace JacRed.Controllers.CRON
             {
                 foreach (var val in taskParse)
                 {
-                    if (1 >= DateTime.Now.Hour)
-                        break;
-
                     if (DateTime.Today == val.updateTime)
                         continue;
+
+                    await Task.Delay(AppInit.conf.Selezen.parseDelay);
 
                     bool res = await parsePage(val.page);
                     if (res)
@@ -101,15 +156,29 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get(page == 1 ? "https://selezen.net/relizy-ot-selezen/" : $"https://selezen.net/relizy-ot-selezen/page/{page}/", useproxy: true);
-            if (html == null || !html.Contains("<title>Релизы от селезень"))
+            #region Авторизация
+            if (Cookie == null)
+            {
+                if (await TakeLogin() == false)
+                    return false;
+            }
+            #endregion
+
+            string html = await HttpClient.Get(page == 1 ? $"{AppInit.conf.Selezen.host}/relizy-ot-selezen/" : $"{AppInit.conf.Selezen.host}/relizy-ot-selezen/page/{page}/", cookie: Cookie, useproxy: AppInit.conf.Selezen.useproxy);
+            if (html == null || !html.Contains("dle_root"))
                 return false;
+
+            if (!html.Contains($">{AppInit.conf.Selezen.login.u}<"))
+            {
+                await TakeLogin();
+                return false;
+            }
 
             bool allParse = true;
 
-            foreach (string row in tParse.ReplaceBadNames(html).Split("class=\"card card-default\"").Skip(1))
+            foreach (string row in tParse.ReplaceBadNames(html).Split("class=\"card radius-10 overflow-hidden\"").Skip(1))
             {
-                if (row.Contains(">Аниме</a>"))
+                if (row.Contains(">Аниме</a>") || row.Contains(" [S0"))
                     continue;
 
                 #region Локальный метод - Match
@@ -125,23 +194,23 @@ namespace JacRed.Controllers.CRON
                     continue;
 
                 #region Дата создания
-                DateTime createTime = tParse.ParseCreateTime(Match("glyphicon-time\"></span> ?([0-9]{2}\\.[0-9]{2}\\.[0-9]{4} [0-9]{2}:[0-9]{2})</a>"), "dd.MM.yyyy HH:mm");
+                DateTime createTime = tParse.ParseCreateTime(Match("class=\"bx bx-calendar\"></span> ?([0-9]{2}\\.[0-9]{2}\\.[0-9]{4} [0-9]{2}:[0-9]{2})</a>"), "dd.MM.yyyy HH:mm");
 
                 if (createTime == default)
                     continue;
                 #endregion
 
                 #region Данные раздачи
-                string url = Match("class=\"short-title\"><a href=\"(https?://[^/]+)?/([^\"]+)\"", 2);
-                string title = Match("class=\"short-title\"><a [^>]+>([^<]+)</a>");
-                string _sid = Match("<i class=\"fa fa-arrow-up\" [^>]+></i><span [^>]+> ?<b>([0-9]+)</b>");
-                string _pir = Match("<i class=\"fa fa-arrow-down\" [^>]+></i><span [^>]+> ?<b>([0-9]+)</b>");
-                string sizeName = Match("<i class=\"fa fa-file-video-o\"[^>]+></i> ?<b>([^<]+)</b>");
+                var g = Regex.Match(row, "<a href=\"(https?://[^<]+)\"><h4 class=\"card-title\">([^<]+)</h4>").Groups;
+                string url = g[1].Value;
+                string title = g[2].Value;
+
+                string _sid = Match("<i class=\"bx bx-chevrons-up\"></i>([0-9 ]+)").Trim();
+                string _pir = Match("<i class=\"bx bx-chevrons-down\"></i>([0-9 ]+)").Trim();
+                string sizeName = Match("<span class=\"bx bx-download\"></span>([^<]+)</a>").Trim();
 
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName))
                     continue;
-
-                url = "http://selezen.net/" + url;
                 #endregion
 
                 #region Парсим раздачи
@@ -149,7 +218,7 @@ namespace JacRed.Controllers.CRON
                 string name = null, originalname = null;
 
                 // Бэд трип / Приколисты в дороге / Bad Trip (2020)
-                var g = Regex.Match(title, "^([^/\\(]+) / [^/]+ / ([^/\\(]+) \\(([0-9]{4})\\)").Groups;
+                g = Regex.Match(title, "^([^/\\(]+) / [^/]+ / ([^/\\(]+) \\(([0-9]{4})\\)").Groups;
                 if (!string.IsNullOrWhiteSpace(g[1].Value) && !string.IsNullOrWhiteSpace(g[2].Value) && !string.IsNullOrWhiteSpace(g[3].Value))
                 {
                     name = g[1].Value;
@@ -185,7 +254,7 @@ namespace JacRed.Controllers.CRON
                     }
                     else
                     {
-                        string fullnews = await HttpClient.Get(url, cookie: AppInit.selezenCookie, useproxy: true);
+                        string fullnews = await HttpClient.Get(url, cookie: Cookie, useproxy: AppInit.conf.Selezen.useproxy);
                         if (fullnews != null)
                         {
                             string _mg = Regex.Match(fullnews, "href=\"(magnet:\\?xt=urn:btih:[^\"]+)\"").Groups[1].Value;
@@ -224,7 +293,6 @@ namespace JacRed.Controllers.CRON
                         name = name,
                         originalname = originalname,
                         relased = relased
-
                     });
                 }
             }
