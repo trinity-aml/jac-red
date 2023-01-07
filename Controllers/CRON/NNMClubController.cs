@@ -20,25 +20,36 @@ namespace JacRed.Controllers.CRON
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/nnmclub_taskParse.json"));
 
         #region Parse
+        static bool _workParse = false;
+
         async public Task<string> Parse(int page)
         {
+            if (_workParse)
+                return "work";
+
+            _workParse = true;
             string log = "";
 
-            // 10 - Новинки кино          | Фильмы
-            // 13 - Наше кино             | Фильмы
-            // 6  - Зарубежное кино       | Фильмы
-            // 4  - Наши сериалы          | Сериалы
-            // 3  - Зарубежные сериалы    | Сериалы
-            // 22 - Док. TV-бренды        | Док. сериалы, Док. фильмы
-            // 23 - Док. и телепередачи   | Док. сериалы, Док. фильмы
-            // 1  - Аниме и Манга         | Аниме
-            // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
-            foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
+            try
             {
-                await parsePage(cat, page);
-                log += $"{cat} - {page}\n";
+                // 10 - Новинки кино          | Фильмы
+                // 13 - Наше кино             | Фильмы
+                // 6  - Зарубежное кино       | Фильмы
+                // 4  - Наши сериалы          | Сериалы
+                // 3  - Зарубежные сериалы    | Сериалы
+                // 22 - Док. TV-бренды        | Док. сериалы, Док. фильмы
+                // 23 - Док. и телепередачи   | Док. сериалы, Док. фильмы
+                // 1  - Аниме и Манга         | Аниме
+                // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
+                foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
+                {
+                    await parsePage(cat, page);
+                    log += $"{cat} - {page}\n";
+                }
             }
+            catch { }
 
+            _workParse = false;
             return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion

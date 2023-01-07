@@ -92,16 +92,27 @@ namespace JacRed.Controllers.CRON
 
 
         #region Parse
-        async public Task<string> Parse(int page = 0)
+        static bool _workParse = false;
+
+        async public Task<string> Parse(int page)
         {
+            if (_workParse)
+                return "work";
+
+            _workParse = true;
             string log = "";
 
-            foreach (string cat in new List<string>() { "16", "96", "19", "139", "32", "173", "174", "44" })
+            try
             {
-                await parsePage(cat, page, parseMagnet: true);
-                log += $"{cat} - {page}\n";
+                foreach (string cat in new List<string>() { "16", "96", "19", "139", "32", "173", "174", "44" })
+                {
+                    await parsePage(cat, page, parseMagnet: true);
+                    log += $"{cat} - {page}\n";
+                }
             }
+            catch { }
 
+            _workParse = false;
             return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion

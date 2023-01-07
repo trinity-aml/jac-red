@@ -22,23 +22,34 @@ namespace JacRed.Controllers.CRON
 
 
         #region Parse
+        static bool _workParse = false;
+
         async public Task<string> Parse(int page)
         {
+            if (_workParse)
+                return "work";
+
             string log = "";
+            _workParse = true;
 
-            // films     - Зарубежные фильмы    | Фильмы
-            // movies    - Наши фильмы          | Фильмы
-            // serials   - Сериалы              | Сериалы
-            // tv        - Телевизор            | ТВ Шоу
-            // humor     - Юмор                 | ТВ Шоу
-            // cartoons  - Мультфильмы          | Мультфильмы, Мультсериалы
-            // anime     - Аниме                | Аниме
-            foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
+            try
             {
-                await Task.Delay(2000);
-                log += $"{cat} - {page}\n";
+                // films     - Зарубежные фильмы    | Фильмы
+                // movies    - Наши фильмы          | Фильмы
+                // serials   - Сериалы              | Сериалы
+                // tv        - Телевизор            | ТВ Шоу
+                // humor     - Юмор                 | ТВ Шоу
+                // cartoons  - Мультфильмы          | Мультфильмы, Мультсериалы
+                // anime     - Аниме                | Аниме
+                foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
+                {
+                    await parsePage(cat, page);
+                    log += $"{cat} - {page}\n";
+                }
             }
+            catch { }
 
+            _workParse = false;
             return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion

@@ -88,29 +88,40 @@ namespace JacRed.Controllers.CRON
 
 
         #region Parse
+        static bool _workParse = false;
+
         async public Task<string> Parse(int page)
         {
+            if (_workParse)
+                return "work";
+
             string log = "";
+            _workParse = true;
 
-            foreach (string cat in new List<string>() 
+            try
             {
-                // Сериалы
-                "45", "46", 
+                foreach (string cat in new List<string>()
+                {
+                    // Сериалы
+                    "45", "46", 
 
-                // Фильмы
-                "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12",
+                    // Фильмы
+                    "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12",
 
-                // ТВ-шоу
-                "49", "50",
+                    // ТВ-шоу
+                    "49", "50",
 
-                // Мульты
-                "21", "22"
-            })
-            {
-                await parsePage(cat, page, parseMagnet: true);
-                log += $"{cat} - {page}\n";
+                    // Мульты
+                    "21", "22"
+                })
+                {
+                    await parsePage(cat, page, parseMagnet: true);
+                    log += $"{cat} - {page}\n";
+                }
             }
+            catch { }
 
+            _workParse = false;
             return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion

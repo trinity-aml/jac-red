@@ -21,25 +21,36 @@ namespace JacRed.Controllers.CRON
 
 
         #region Parse
+        static bool _workParse = false;
+
         async public Task<string> Parse(int page)
         {
+            if (_workParse)
+                return "work";
+
+            _workParse = true;
             string log = "";
 
-            // 1  - Зарубежные фильмы          | Фильмы
-            // 5  - Наши фильмы                | Фильмы
-            // 4  - Зарубежные сериалы         | Сериалы
-            // 16 - Наши сериалы               | Сериалы
-            // 12 - Научно-популярные фильмы   | Док. сериалы, Док. фильмы
-            // 6  - Телевизор                  | ТВ Шоу
-            // 7  - Мультипликация             | Мультфильмы, Мультсериалы
-            // 10 - Аниме                      | Аниме
-            // 17 - Иностранные релизы         | UA озвучка
-            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
+            try
             {
-                bool res = await parsePage(cat, page);
-                log += $"{cat} - {page} / {res}\n";
+                // 1  - Зарубежные фильмы          | Фильмы
+                // 5  - Наши фильмы                | Фильмы
+                // 4  - Зарубежные сериалы         | Сериалы
+                // 16 - Наши сериалы               | Сериалы
+                // 12 - Научно-популярные фильмы   | Док. сериалы, Док. фильмы
+                // 6  - Телевизор                  | ТВ Шоу
+                // 7  - Мультипликация             | Мультфильмы, Мультсериалы
+                // 10 - Аниме                      | Аниме
+                // 17 - Иностранные релизы         | UA озвучка
+                foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
+                {
+                    bool res = await parsePage(cat, page);
+                    log += $"{cat} - {page} / {res}\n";
+                }
             }
+            catch { }
 
+            _workParse = false;
             return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion
