@@ -2,7 +2,7 @@
 curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | bash
 
 # Источники 
-* Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Anilibria, Toloka (UKR), Rutracker, Selezen, Animelayer
+* Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Rutracker, Selezen, Toloka (UKR), Anilibria, Animelayer, Anifilm
 
 # Настройка
 1. Указать логины и пароли в init.conf

@@ -12,13 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/anifilm/[action]")]
+    [Route("/cron/anifilm/[action]")]
     public class AnifilmController : BaseController
     {
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(int page = 1)
+        async public Task<string> Parse(bool fullparse)
         {
             if (workParse)
                 return "work";
@@ -27,57 +27,35 @@ namespace JacRed.Controllers.CRON
 
             string log = "";
 
-            // Законченные "anime_tv/full"
-            foreach (string cat in new List<string>() { "serials", "ova", "ona", "movies" })
-            {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page, DateTime.Now);
-                if (!res)
-                {
-                    if (countreset > 2)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
-                log += $"{cat} - {page}\n";
-            }
-
-            workParse = false;
-            return string.IsNullOrWhiteSpace(log) ? "ok" : log;
-        }
-        #endregion
-
-        #region DevParse
-        static bool workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            if (workDevParse)
-                return "work";
-
-            workDevParse = true;
-
             try
             {
-                for (int page = 1; page <= 70; page++)
-                    await parsePage("serials", page, DateTime.Today.AddDays(-(2 * page)));
+                if (fullparse)
+                {
+                    for (int page = 1; page <= 70; page++)
+                        await parsePage("serials", page, DateTime.Today.AddDays(-(2 * page)));
 
-                for (int page = 1; page <= 32; page++)
-                    await parsePage("ova", page, DateTime.Today.AddDays(-(2 * page)));
+                    for (int page = 1; page <= 32; page++)
+                        await parsePage("ova", page, DateTime.Today.AddDays(-(2 * page)));
 
-                for (int page = 1; page <= 2; page++)
-                    await parsePage("ona", page, DateTime.Today.AddDays(-(2 * page)));
+                    for (int page = 1; page <= 2; page++)
+                        await parsePage("ona", page, DateTime.Today.AddDays(-(2 * page)));
 
-                for (int page = 1; page <= 17; page++)
-                    await parsePage("movies", page, DateTime.Today.AddDays(-(2 * page)));
+                    for (int page = 1; page <= 17; page++)
+                        await parsePage("movies", page, DateTime.Today.AddDays(-(2 * page)));
+                }
+                else
+                {
+                    foreach (string cat in new List<string>() { "serials", "ova", "ona", "movies" })
+                    {
+                        await parsePage(cat, 1, DateTime.Now);
+                        log += $"{cat} - 1\n";
+                    }
+                }
             }
             catch { }
 
-            workDevParse = false;
-            return "ok";
+            workParse = false;
+            return string.IsNullOrWhiteSpace(log) ? "ok" : log;
         }
         #endregion
 
@@ -85,7 +63,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, DateTime createTime)
         {
-            string html = await HttpClient.Get($"https://anifilm.tv/releases/page/{page}?category={cat}", useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.Anifilm.host}/releases/page/{page}?category={cat}", useproxy: AppInit.conf.Anifilm.useproxy);
             if (html == null || !html.Contains("id=\"ui-components\""))
                 return false;
 
@@ -112,7 +90,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(originalname) || string.IsNullOrWhiteSpace(episodes))
                     continue;
 
-                url = "https://anifilm.tv/" + url;
+                url = $"{AppInit.conf.Anifilm.host}/{url}";
                 string title = $"{name} / {originalname} ({episodes})";
                 #endregion
 
@@ -122,7 +100,7 @@ namespace JacRed.Controllers.CRON
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title != title)
+                    if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title.Replace(" [1080p]", "") != title)
                     {
                         #region Обновляем/Получаем Magnet
                         string magnet = null;
@@ -137,12 +115,16 @@ namespace JacRed.Controllers.CRON
 
                         string _rnews = releasetorrents.FirstOrDefault(i => i.Contains("href=\"/releases/download-torrent/") && i.Contains(" 1080p "));
                         if (!string.IsNullOrWhiteSpace(_rnews))
+                        {
                             tid = Regex.Match(_rnews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
+                            if (!string.IsNullOrWhiteSpace(tid))
+                                title += " [1080p]";
+                        }
 
                         if (string.IsNullOrWhiteSpace(tid))
                             tid = Regex.Match(fulnews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
 
-                        byte[] torrent = await HttpClient.Download($"https://anifilm.tv/{tid}", referer: url, useproxy: true);
+                        byte[] torrent = await HttpClient.Download($"{AppInit.conf.Anifilm.host}/{tid}", referer: url, useproxy: AppInit.conf.Anifilm.useproxy);
                         magnet = BencodeTo.Magnet(torrent);
                         sizeName = BencodeTo.SizeName(torrent);
 
