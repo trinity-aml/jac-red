@@ -14,6 +14,8 @@
 
         public string host { get; set; }
 
+        public string cookie { get; set; }
+
         public bool useproxy { get; set; }
 
         /// <summary>

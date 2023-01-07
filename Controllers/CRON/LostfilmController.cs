@@ -9,10 +9,11 @@ using JacRed.Engine.Parse;
 using JacRed.Models.tParse;
 using JacRed.Engine;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/lostfilm/[action]")]
+    [Route("/cron/lostfilm/[action]")]
     public class LostfilmController : BaseController
     {
         #region LostfilmController
@@ -30,7 +31,7 @@ namespace JacRed.Controllers.CRON
             cloudHttp.Timeout = TimeSpan.FromSeconds(20);
             cloudHttp.MaxResponseContentBufferSize = 10_000_000;
             cloudHttp.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36");
-            cloudHttp.DefaultRequestHeaders.Add("cookie", AppInit.lostfilmCookie);
+            cloudHttp.DefaultRequestHeaders.Add("cookie", AppInit.conf.Lostfilm.cookie);
 
             cloudHttp.DefaultRequestHeaders.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
             cloudHttp.DefaultRequestHeaders.Add("accept-language", "ru-RU,ru;q=0.9,uk-UA;q=0.8,uk;q=0.7,en-US;q=0.6,en;q=0.5");
@@ -49,45 +50,23 @@ namespace JacRed.Controllers.CRON
 
 
         #region Parse
-        async public Task<string> Parse(int page = 1)
+        static bool _workParse = false;
+
+        async public Task<string> Parse(int maxpage = 1)
         {
-            await parsePage(1);
-            return "ok";
-
-            int countreset = 0;
-            reset: bool res = await parsePage(page);
-            if (!res)
-            {
-                if (countreset > 2)
-                    return "error";
-
-                await Task.Delay(2000);
-                countreset++;
-                goto reset;
-            }
-
-            return "ok";
-        }
-        #endregion
-
-        #region DevParse
-        static bool _workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            if (_workDevParse)
+            if (_workParse)
                 return "work";
 
-            _workDevParse = true;
+            _workParse = true;
 
             try
             {
-                for (int i = 1; i <= 1124; i++)
+                for (int i = 1; i <= maxpage; i++)
                     await parsePage(i);
             }
             catch { }
 
-            _workDevParse = false;
+            _workParse = false;
             return "ok";
         }
         #endregion
@@ -96,7 +75,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get(page > 1 ? $"https://www.lostfilm.tv/new/page_{page}" : "https://www.lostfilm.tv/new/", useproxy: page > 1);
+            string html = await HttpClient.Get(page > 1 ? $"{AppInit.conf.Lostfilm.host}/new/page_{page}" : $"{AppInit.conf.Lostfilm.host}/new/", useproxy: AppInit.conf.Lostfilm.useproxy);
             if (html == null || !html.Contains("LostFilm.TV</title>"))
                 return false;
 
@@ -116,16 +95,12 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(row))
                     continue;
 
-                //Console.WriteLine("\n\n1");
-
                 #region Дата создания
                 DateTime createTime = tParse.ParseCreateTime(Match("<div class=\"right-part\">([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})</div>"), "dd.MM.yyyy");
 
                 if (createTime == default)
                     continue;
                 #endregion
-
-                //Console.WriteLine("2");
 
                 #region Данные раздачи
                 string url = Match("href=\"/([^\"]+)\"");
@@ -136,16 +111,14 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(originalname) || string.IsNullOrWhiteSpace(sinfo))
                     continue;
 
-                url = "https://www.lostfilm.tv/" + url;
+                url = $"{AppInit.conf.Lostfilm.host}/{url}";
                 #endregion
-
-                //Console.WriteLine("3");
 
                 // Торрент уже есть в базе
                 if (tParse.TryGetValue(url, out _))
                     continue;
 
-                //Console.WriteLine("4");
+                await Task.Delay(AppInit.conf.Lostfilm.parseDelay);
 
                 #region relased
                 if (!memoryCache.TryGetValue($"lostfilm:relased:{url}", out int relased))
@@ -164,8 +137,6 @@ namespace JacRed.Controllers.CRON
                         continue;
                 }
                 #endregion
-
-                //Console.WriteLine("5");
 
                 #region Получаем Magnet
                 string magnet = null;
@@ -187,7 +158,7 @@ namespace JacRed.Controllers.CRON
                         //Console.WriteLine($"https://www.lostfilm.tv/v_search.php?a={episodeId}");
 
                         // Получаем ссылку на поиск
-                        string v_search = await cloudHttp.GetStringAsync($"https://www.lostfilm.tv/v_search.php?a={episodeId}");
+                        string v_search = await cloudHttp.GetStringAsync($"{AppInit.conf.Lostfilm.host}/v_search.php?a={episodeId}");
                         string retreSearchUrl = new Regex("url=(\")?(https?://[^/]+/[^\"]+)").Match(v_search ?? "").Groups[2].Value.Trim();
                         if (!string.IsNullOrWhiteSpace(retreSearchUrl))
                         {
@@ -209,7 +180,7 @@ namespace JacRed.Controllers.CRON
                                         if (!string.IsNullOrWhiteSpace(torrentFile) && !string.IsNullOrWhiteSpace(quality))
                                         {
                                             //Console.WriteLine("d: " + torrentFile);
-                                            byte[] torrent = await HttpClient.Download(torrentFile, referer: $"https://www.lostfilm.tv/");
+                                            byte[] torrent = await HttpClient.Download(torrentFile, referer: $"{AppInit.conf.Lostfilm.host}/");
                                             magnet = BencodeTo.Magnet(torrent);
                                             if (!string.IsNullOrWhiteSpace(magnet))
                                             {
@@ -233,8 +204,6 @@ namespace JacRed.Controllers.CRON
                     continue;
                 }
                 #endregion
-
-                //Console.WriteLine("6");
 
                 string title = $"{name} / {originalname} / {sinfo} [{relased}, {quality}]";
 

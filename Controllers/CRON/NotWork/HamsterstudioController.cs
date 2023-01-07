@@ -33,8 +33,8 @@ namespace JacRed.Controllers.CRON.NotWork
                     client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
 
                     var postParams = new Dictionary<string, string>();
-                    postParams.Add("username", AppInit.hamsterLogin.u);
-                    postParams.Add("password", AppInit.hamsterLogin.p);
+                    //postParams.Add("username", AppInit.hamsterLogin.u);
+                    //postParams.Add("password", AppInit.hamsterLogin.p);
 
                     using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
                     {

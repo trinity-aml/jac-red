@@ -8,16 +8,6 @@ namespace JacRed
 {
     public class AppInit
     {
-        #region СНЕСТИ
-        public static string lostfilmCookie;
-
-        public static (string u, string p) hamsterLogin;
-        #endregion
-
-
-
-
-
         #region AppInit
         static (AppInit, DateTime) cacheconf = default;
 
@@ -79,6 +69,8 @@ namespace JacRed
         public TrackerSettings Rezka = new TrackerSettings("https://rezka.cc");
 
         public TrackerSettings Baibako = new TrackerSettings("http://baibako.tv");
+
+        public TrackerSettings Lostfilm = new TrackerSettings("https://www.lostfilm.tv");
 
 
         public ProxySettings proxy = new ProxySettings();
