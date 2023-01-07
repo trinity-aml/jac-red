@@ -58,7 +58,7 @@ namespace JacRed
 
         public TrackerSettings Selezen = new TrackerSettings("https://selezen.org");
 
-        public TrackerSettings Anilibria = new TrackerSettings("https://www.anilibria.tv");
+        public TrackerSettings Anilibria = new TrackerSettings("https://api.anilibria.tv");
 
         public TrackerSettings Animelayer = new TrackerSettings("http://animelayer.ru");
 

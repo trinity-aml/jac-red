@@ -15,7 +15,7 @@ namespace JacRed.Controllers.CRON
     {
         static bool workParse = false;
 
-        async public Task<string> Parse()
+        async public Task<string> Parse(int limit)
         {
             if (workParse)
                 return "work";
@@ -24,61 +24,55 @@ namespace JacRed.Controllers.CRON
 
             try
             {
-
-                var roots = await HttpClient.Get<List<RootObject>>("http://api.anilibria.tv/v2/getUpdates?limit=-1", MaxResponseContentBufferSize: 200_000_000, timeoutSeconds: 60 * 5, IgnoreDeserializeObject: true, useproxy: AppInit.conf.Anilibria.useproxy);
-                if (roots == null || roots.Count == 0)
+                for (int after = 0; after <= limit; after++)
                 {
-                    workParse = false;
-                    return "root == null";
-                }
+                    after = after+40;
 
-                foreach (var root in roots)
-                {
-                    DateTime createTime = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddSeconds(root.last_change > root.updated ? root.last_change : root.updated);
+                    var roots = await HttpClient.Get<List<RootObject>>($"{AppInit.conf.Anilibria.host}/v2/getUpdates?limit=40&after={after - 40}&include=raw_torrent", IgnoreDeserializeObject: true, useproxy: AppInit.conf.Anilibria.useproxy);
+                    if (roots == null || roots.Count == 0)
+                        continue;
 
-                    foreach (var torrent in root.torrents.list)
+                    foreach (var root in roots)
                     {
-                        if (string.IsNullOrWhiteSpace(root.code) || 480 >= torrent.quality.resolution && string.IsNullOrWhiteSpace(torrent.quality.encoder) && string.IsNullOrWhiteSpace(torrent.url))
-                            continue;
+                        DateTime createTime = new DateTime(1970, 1, 1, 0, 0, 0, 0).AddSeconds(root.last_change > root.updated ? root.last_change : root.updated);
 
-                        await Task.Delay(AppInit.conf.Anilibria.parseDelay);
-
-                        // Данные раздачи
-                        string url = $"anilibria.tv:{root.code}:{torrent.quality.resolution}:{torrent.quality.encoder}";
-                        string title = $"{root.names.ru} / {root.names.en} {root.season.year} (s{root.season.code}, e{torrent.series.@string}) [{torrent.quality.@string}]";
-
-                        #region Получаем/Обновляем магнет
-                        string magnet = null;
-                        string sizeName = null;
-
-                        if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title != title)
+                        foreach (var torrent in root.torrents.list)
                         {
-                            byte[] _t = await HttpClient.Download(AppInit.conf.Anilibria.host + torrent.url, referer: $"{AppInit.conf.Anilibria.host}/release/{root.code}.html", useproxy: AppInit.conf.Anilibria.useproxy);
-                            magnet = BencodeTo.Magnet(_t);
+                            if (string.IsNullOrWhiteSpace(root.code) || 480 >= torrent.quality.resolution && string.IsNullOrWhiteSpace(torrent.quality.encoder) && string.IsNullOrWhiteSpace(torrent.url))
+                                continue;
 
-                            if (!string.IsNullOrWhiteSpace(magnet))
-                                sizeName = BencodeTo.SizeName(_t);
+                            // Данные раздачи
+                            string url = $"anilibria.tv:{root.code}:{torrent.quality.resolution}:{torrent.quality.encoder}";
+                            string title = $"{root.names.ru} / {root.names.en} {root.season.year} (s{root.season.code}, e{torrent.series.@string}) [{torrent.quality.@string}]";
+
+                            #region Получаем/Обновляем магнет
+                            if (string.IsNullOrWhiteSpace(torrent.raw_base64_file))
+                                continue;
+
+                            byte[] _t = Convert.FromBase64String(torrent.raw_base64_file);
+                            string magnet = BencodeTo.Magnet(_t);
+                            string sizeName = BencodeTo.SizeName(_t);
 
                             if (string.IsNullOrWhiteSpace(magnet) || string.IsNullOrWhiteSpace(sizeName))
                                 continue;
-                        }
-                        #endregion
+                            #endregion
 
-                        tParse.AddOrUpdate(new TorrentDetails()
-                        {
-                            trackerName = "anilibria",
-                            types = new string[] { "anime" },
-                            url = url,
-                            title = title,
-                            sid = torrent.seeders,
-                            pir = torrent.leechers,
-                            createTime = createTime,
-                            magnet = magnet,
-                            sizeName = sizeName,
-                            name = tParse.ReplaceBadNames(root.names.ru),
-                            originalname = tParse.ReplaceBadNames(root.names.en),
-                            relased = root.season.year
-                        });
+                            tParse.AddOrUpdate(new TorrentDetails()
+                            {
+                                trackerName = "anilibria",
+                                types = new string[] { "anime" },
+                                url = url,
+                                title = title,
+                                sid = torrent.seeders,
+                                pir = torrent.leechers,
+                                createTime = createTime,
+                                magnet = magnet,
+                                sizeName = sizeName,
+                                name = tParse.ReplaceBadNames(root.names.ru),
+                                originalname = tParse.ReplaceBadNames(root.names.en),
+                                relased = root.season.year
+                            });
+                        }
                     }
                 }
             }

@@ -173,7 +173,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName))
                     continue;
 
-                url = $"{AppInit.conf.NNMClub.host}/{url}";
+                url = $"{AppInit.conf.NNMClub.host}/forum/{url}";
                 #endregion
 
                 #region Парсим раздачи

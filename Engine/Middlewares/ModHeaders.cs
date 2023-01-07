@@ -17,6 +17,7 @@ namespace JacRed.Engine.Middlewares
             httpContext.Response.Headers.Add("Access-Control-Allow-Headers", "Accept, Content-Type");
             httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "POST, GET");
             httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            httpContext.Response.Headers.Add("Referrer-Policy", "no-referrer");
 
             if (httpContext.Connection.RemoteIpAddress.ToString() != "127.0.0.1")
             {
