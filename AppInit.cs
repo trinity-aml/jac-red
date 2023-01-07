@@ -1,5 +1,4 @@
 ﻿using JacRed.Models.AppConf;
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -45,8 +44,6 @@ namespace JacRed
                 return cacheconf.Item1;
             }
         }
-
-        public static string Host(HttpContext httpContext) => $"http://{httpContext.Request.Host.Value}";
         #endregion
 
 

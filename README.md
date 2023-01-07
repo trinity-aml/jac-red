@@ -1,10 +1,11 @@
 # Установка
-Установка на linux с помощью скрипта
-
 curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | bash
 
 # Источники 
 * Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Anilibria, Toloka (UKR), Rutracker, Selezen, Animelayer
+
+# Настройка
+Перенести в "crontab -e" данные с файла "Data/crontab"
 
 # Доступ к доменам .onion
 1. Запустить tor на порту 9050
