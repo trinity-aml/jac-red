@@ -239,7 +239,7 @@ namespace JacRed.Controllers.CRON
                             relased = relased
                         });
 
-                        await Task.Delay(1000 * 20);
+                        await Task.Delay(AppInit.conf.Animelayer.parseDelay);
                     }
                 }
             }

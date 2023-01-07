@@ -10,10 +10,9 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/anilibria/[action]")]
+    [Route("/cron/anilibria/[action]")]
     public class AniLibriaController : BaseController
     {
-        #region Parse
         static bool workParse = false;
 
         async public Task<string> Parse()
@@ -26,7 +25,7 @@ namespace JacRed.Controllers.CRON
             try
             {
 
-                var roots = await HttpClient.Get<List<RootObject>>("http://api.anilibria.tv/v2/getUpdates?limit=-1", MaxResponseContentBufferSize: 200_000_000, timeoutSeconds: 60 * 5, IgnoreDeserializeObject: true);
+                var roots = await HttpClient.Get<List<RootObject>>("http://api.anilibria.tv/v2/getUpdates?limit=-1", MaxResponseContentBufferSize: 200_000_000, timeoutSeconds: 60 * 5, IgnoreDeserializeObject: true, useproxy: AppInit.conf.Anilibria.useproxy);
                 if (roots == null || roots.Count == 0)
                     return "root == null";
 
@@ -39,6 +38,8 @@ namespace JacRed.Controllers.CRON
                         if (string.IsNullOrWhiteSpace(root.code) || 480 >= torrent.quality.resolution && string.IsNullOrWhiteSpace(torrent.quality.encoder) && string.IsNullOrWhiteSpace(torrent.url))
                             continue;
 
+                        await Task.Delay(AppInit.conf.Anilibria.parseDelay);
+
                         // Данные раздачи
                         string url = $"anilibria.tv:{root.code}:{torrent.quality.resolution}:{torrent.quality.encoder}";
                         string title = $"{root.names.ru} / {root.names.en} {root.season.year} (s{root.season.code}, e{torrent.series.@string}) [{torrent.quality.@string}]";
@@ -49,7 +50,7 @@ namespace JacRed.Controllers.CRON
 
                         if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title != title)
                         {
-                            byte[] _t = await HttpClient.Download($"https://www.anilibria.tv" + torrent.url, referer: $"https://www.anilibria.tv/release/{root.code}.html", useproxy: true);
+                            byte[] _t = await HttpClient.Download(AppInit.conf.Anilibria.host + torrent.url, referer: $"{AppInit.conf.Anilibria.host}/release/{root.code}.html", useproxy: AppInit.conf.Anilibria.useproxy);
                             magnet = BencodeTo.Magnet(_t);
 
                             if (!string.IsNullOrWhiteSpace(magnet))
@@ -83,6 +84,5 @@ namespace JacRed.Controllers.CRON
             workParse = false;
             return "ok";
         }
-        #endregion
     }
 }
