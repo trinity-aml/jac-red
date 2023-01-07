@@ -5,7 +5,8 @@ curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | b
 * Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Anilibria, Toloka (UKR), Rutracker, Selezen, Animelayer
 
 # Настройка
-Перенести в "crontab -e" данные с файла "Data/crontab"
+1. Указать логины и пароли в init.conf
+2. Перенести в "crontab -e" данные с файла "Data/crontab"
 
 # Доступ к доменам .onion
 1. Запустить tor на порту 9050
