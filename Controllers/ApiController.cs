@@ -19,7 +19,7 @@ namespace JacRed.Controllers
         [Route("/")]
         public ActionResult Index()
         {
-            return LocalRedirect("/index.html");
+            return File(System.IO.File.OpenRead("wwwroot/index.html"), "text/html");
         }
 
         #region Jackett
