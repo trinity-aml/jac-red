@@ -18,9 +18,15 @@ namespace JacRed.Engine.Middlewares
             httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "POST, GET");
             httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
 
-            if (!string.IsNullOrWhiteSpace(AppInit.conf.apikey))
+            if (httpContext.Connection.RemoteIpAddress.ToString() != "127.0.0.1")
             {
-                if (AppInit.conf.apikey != Regex.Match(httpContext.Request.QueryString.Value, "(\\?|&)apikey=([^&]+)").Groups[2].Value)
+                if (!string.IsNullOrWhiteSpace(AppInit.conf.apikey))
+                {
+                    if (AppInit.conf.apikey != Regex.Match(httpContext.Request.QueryString.Value, "(\\?|&)apikey=([^&]+)").Groups[2].Value)
+                        return Task.CompletedTask;
+                }
+
+                if (httpContext.Request.Path.Value.StartsWith("/cron/"))
                     return Task.CompletedTask;
             }
 
