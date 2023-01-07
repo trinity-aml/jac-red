@@ -15,7 +15,7 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/toloka/[action]")]
+    [Route("/cron/toloka/[action]")]
     public class TolokaController : BaseController
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/toloka_taskParse.json"));
@@ -38,22 +38,26 @@ namespace JacRed.Controllers.CRON
                     AllowAutoRedirect = false
                 };
 
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
                 using (var client = new System.Net.Http.HttpClient(clientHandler))
                 {
+                    client.Timeout = TimeSpan.FromSeconds(10);
                     client.MaxResponseContentBufferSize = 2000000; // 2MB
                     client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
 
-                    var postParams = new Dictionary<string, string>();
-                    postParams.Add("username", AppInit.tolokaLogin.u);
-                    postParams.Add("password", AppInit.tolokaLogin.p);
-                    postParams.Add("autologin", "on");
-                    postParams.Add("ssl", "on");
-                    postParams.Add("redirect", "index.php?");
-                    postParams.Add("login", "Вхід");
+                    var postParams = new Dictionary<string, string>
+                    {
+                        { "username", AppInit.conf.Toloka.login.u },
+                        { "password", AppInit.conf.Toloka.login.p },
+                        { "autologin", "on" },
+                        { "ssl", "on" },
+                        { "redirect", "index.php?" },
+                        { "login", "Вхід" }
+                    };
 
                     using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
                     {
-                        using (var response = await client.PostAsync("https://toloka.to/login.php", postContent))
+                        using (var response = await client.PostAsync($"{AppInit.conf.Toloka.host}/login.php", postContent))
                         {
                             if (response.Headers.TryGetValues("Set-Cookie", out var cook))
                             {
@@ -72,7 +76,7 @@ namespace JacRed.Controllers.CRON
 
                                 if (!string.IsNullOrWhiteSpace(toloka_sid) && !string.IsNullOrWhiteSpace(toloka_data))
                                 {
-                                    memoryCache.Set("cron:TolokaController:Cookie", $"toloka_sid={toloka_sid}; toloka_ssl=1; toloka_data={toloka_data};", TimeSpan.FromHours(1));
+                                    memoryCache.Set("cron:TolokaController:Cookie", $"toloka_sid={toloka_sid}; toloka_ssl=1; toloka_data={toloka_data};", DateTime.Now.AddHours(1));
                                     return true;
                                 }
                             }
@@ -105,12 +109,6 @@ namespace JacRed.Controllers.CRON
         #region UpdateTasksParse
         async public Task<string> UpdateTasksParse(bool saveDb)
         {
-            if (saveDb)
-            {
-                IO.File.WriteAllText("Data/temp/toloka_taskParse.json", JsonConvert.SerializeObject(taskParse));
-                return "save";
-            }
-
             #region Авторизация
             if (Cookie(memoryCache) == null)
             {
@@ -139,12 +137,12 @@ namespace JacRed.Controllers.CRON
             })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"https://toloka.to/f{cat}", timeoutSeconds: 10, cookie: Cookie(memoryCache));
+                string html = await HttpClient.Get($"{AppInit.conf.Toloka.host}/f{cat}", timeoutSeconds: 10, cookie: Cookie(memoryCache));
                 if (html == null)
                     continue;
 
                 // Максимальное количиство страниц
-                int.TryParse(Regex.Match(html, "<a href=\"[^\"]+\">([0-9]+)</a>&nbsp;&nbsp;<a href=\"[^\"]+\">наступна</a>").Groups[1].Value, out int maxpages);
+                int.TryParse(Regex.Match(html, ">([0-9]+)</a>&nbsp;&nbsp;<a href=\"[^\"]+\">наступна</a>").Groups[1].Value, out int maxpages);
 
                 if (maxpages > 0)
                 {
@@ -161,6 +159,7 @@ namespace JacRed.Controllers.CRON
                 }
             }
 
+            IO.File.WriteAllText("Data/temp/toloka_taskParse.json", JsonConvert.SerializeObject(taskParse));
             return "ok";
         }
         #endregion
@@ -181,11 +180,10 @@ namespace JacRed.Controllers.CRON
                 {
                     foreach (var val in task.Value)
                     {
-                        if (1 >= DateTime.Now.Hour)
-                            break;
-
                         if (DateTime.Today == val.updateTime)
                             continue;
+
+                        await Task.Delay(AppInit.conf.Toloka.parseDelay);
 
                         bool res = await parsePage(task.Key, val.page);
                         if (res)
@@ -219,11 +217,11 @@ namespace JacRed.Controllers.CRON
             }
             #endregion
 
-            string html = await HttpClient.Get("https://toloka.to" + $"/f{cat}{(page == 0 ? "" : $"-{page * 45}")}", cookie: Cookie(memoryCache)/*, useproxy: true, proxy: tParse.webProxy()*/);
+            string html = await HttpClient.Get($"{AppInit.conf.Toloka.host}/f{cat}{(page == 0 ? "" : $"-{page * 45}")}", cookie: Cookie(memoryCache)/*, useproxy: true, proxy: tParse.webProxy()*/);
             if (html == null || !html.Contains("<html lang=\"uk\""))
                 return false;
 
-            foreach (string row in tParse.ReplaceBadNames(html).Split("<td class=\"row1\" width=\"100%\">").Skip(1))
+            foreach (string row in tParse.ReplaceBadNames(html).Split("</tr>").Skip(1))
             {
                 if (string.IsNullOrWhiteSpace(row) || Regex.IsMatch(row, "Збір коштів", RegexOptions.IgnoreCase))
                     continue;
@@ -254,7 +252,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName) || sizeName == "0 B")
                     continue;
 
-                url = "http://toloka.to/" + url;
+                url = $"{AppInit.conf.Toloka.host}/{url}";
                 #endregion
 
                 #region Парсим раздачи
@@ -331,7 +329,7 @@ namespace JacRed.Controllers.CRON
                             string downloadId = Regex.Match(row, "href=\"download.php\\?id=([0-9]+)\"").Groups[1].Value;
                             if (!string.IsNullOrWhiteSpace(downloadId))
                             {
-                                byte[] torrent = await HttpClient.Download($"https://toloka.to/download.php?id={downloadId}", cookie: Cookie(memoryCache), referer: "https://toloka.to");
+                                byte[] torrent = await HttpClient.Download($"{AppInit.conf.Toloka.host}/download.php?id={downloadId}", cookie: Cookie(memoryCache), referer: AppInit.conf.Toloka.host);
                                 magnet = BencodeTo.Magnet(torrent);
                             }
                         }
@@ -429,7 +427,7 @@ namespace JacRed.Controllers.CRON
                         string downloadId = Regex.Match(html, "href=\"download.php\\?id=([0-9]+)\"").Groups[1].Value;
                         if (!string.IsNullOrWhiteSpace(downloadId))
                         {
-                            string magnet = BencodeTo.Magnet(await HttpClient.Download($"https://toloka.to/download.php?id={downloadId}", cookie: Cookie(memoryCache), referer: "https://toloka.to"));
+                            string magnet = BencodeTo.Magnet(await HttpClient.Download($"{AppInit.conf.Toloka.host}/download.php?id={downloadId}", cookie: Cookie(memoryCache), referer: AppInit.conf.Toloka.host));
 
                             if (!string.IsNullOrWhiteSpace(magnet))
                                 torrent.Value.magnet = magnet;

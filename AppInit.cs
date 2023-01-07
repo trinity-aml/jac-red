@@ -12,8 +12,6 @@ namespace JacRed
         #region СНЕСТИ
         public static string lostfilmCookie;
 
-        public static (string u, string p) tolokaLogin;
-
         public static (string u, string p) baibakoLogin;
 
         public static (string u, string p) hamsterLogin;
