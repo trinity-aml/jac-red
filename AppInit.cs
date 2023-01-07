@@ -77,6 +77,8 @@ namespace JacRed
 
         public TrackerSettings Animelayer = new TrackerSettings("http://animelayer.ru", enable: false);
 
+        public TrackerSettings Anidub = new TrackerSettings("https://tr.anidub.com");
+
 
         public ProxySettings proxy = new ProxySettings();
 

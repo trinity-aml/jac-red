@@ -9,74 +9,48 @@ using JacRed.Engine.CORE;
 using JacRed.Engine.Parse;
 using JacRed.Models.tParse;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/anidub/[action]")]
+    //[Route("/cron/anidub/[action]")]
     public class AnidubController : BaseController
     {
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(int page = 1)
+        async public Task<string> Parse(bool firstpage)
         {
             if (workParse)
                 return "work";
 
             workParse = true;
 
-            string log = "";
-
-            // Законченные "anime_tv/full"
-            foreach (string cat in new List<string>() { "anime_tv/anime_ongoing", "anime_tv/shonen", "anime_ova", "anime_movie" })
-            {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page);
-                if (!res)
-                {
-                    if (countreset > 2)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
-                log += $"{cat} - {page}\n";
-            }
-
-            workParse = false;
-            return string.IsNullOrWhiteSpace(log) ? "ok" : log;
-        }
-        #endregion
-
-        #region DevParse
-        static bool workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            if (workDevParse)
-                return "work";
-
-            workDevParse = true;
-
             try
             {
-                for (int page = 1; page <= 4; page++)
-                    await parsePage("anime_tv/anime_ongoing", page);
+                if (firstpage)
+                {
+                    foreach (string cat in new List<string>() { "anime_tv/anime_ongoing", "anime_tv/shonen", "anime_ova", "anime_movie" })
+                        await parsePage(cat, 1);
+                }
+                else
+                {
+                    for (int page = 1; page <= 4; page++)
+                        await parsePage("anime_tv/anime_ongoing", page);
 
-                for (int page = 1; page <= 41; page++)
-                    await parsePage("anime_ova", page);
+                    for (int page = 1; page <= 41; page++)
+                        await parsePage("anime_ova", page);
 
-                for (int page = 1; page <= 22; page++)
-                    await parsePage("anime_movie", page);
+                    for (int page = 1; page <= 22; page++)
+                        await parsePage("anime_movie", page);
 
-                for (int page = 1; page <= 124; page++)
-                    await parsePage("anime_tv/full", page);
+                    for (int page = 1; page <= 124; page++)
+                        await parsePage("anime_tv/full", page);
+                }
             }
             catch { }
 
-            workDevParse = false;
+            workParse = false;
             return "ok";
         }
         #endregion
@@ -85,9 +59,12 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"https://tr.anidub.com/{cat}/" + (page > 1 ? $"page/{page}/" : ""), useproxy: true);
+            Console.WriteLine($"\n\n{AppInit.conf.Anidub.host}/{cat}/" + (page > 1 ? $"page/{page}/" : ""));
+            string html = await HttpClient.Get($"{AppInit.conf.Anidub.host}/{cat}/" + (page > 1 ? $"page/{page}/" : ""), useproxy: AppInit.conf.Anidub.useproxy);
             if (html == null || !html.Contains("id=\"header_h\""))
                 return false;
+
+            Console.WriteLine("1");
 
             foreach (string row in tParse.ReplaceBadNames(html).Split("<article class=\"story\"").Skip(1))
             {
@@ -102,6 +79,8 @@ namespace JacRed.Controllers.CRON
 
                 if (string.IsNullOrWhiteSpace(row))
                     continue;
+
+                Console.WriteLine("2");
 
                 #region Дата создания
                 DateTime createTime = default;
@@ -123,6 +102,8 @@ namespace JacRed.Controllers.CRON
                     continue;
                 #endregion
 
+                Console.WriteLine("3");
+
                 #region Данные раздачи
                 string url = Match("<h2><a href=\"(https?://[^/]+)?/([^\":]+)\"", 2);
                 string title = Match(">([^<]+)</a></h2>");
@@ -130,8 +111,10 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title))
                     continue;
 
-                url = "https://tr.anidub.com/" + url;
+                url = $"{AppInit.conf.Anidub.host}/{url}";
                 #endregion
+
+                Console.WriteLine("4");
 
                 #region name / originalname
                 string name = null, originalname = null;
@@ -149,27 +132,50 @@ namespace JacRed.Controllers.CRON
                 if (!int.TryParse(Match("<b>Год: </b><span><a href=\"[^\"]+\">([0-9]{4})</a>"), out int relased) || relased == 0)
                     continue;
 
+                Console.WriteLine("5");
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title != title)
                     {
+                        Console.WriteLine("6");
+
+                        await Task.Delay(AppInit.conf.Anidub.parseDelay);
+
                         #region Обновляем/Получаем Magnet
                         string magnet = null;
                         string sizeName = null;
 
-                        string fulnews = await HttpClient.Get(url, useproxy: true);
+                        string fulnews = await HttpClient.Get(url, useproxy: AppInit.conf.Anidub.useproxy);
                         if (fulnews == null)
                             continue;
 
+                        Console.WriteLine("7");
+
                         string tid = Regex.Match(fulnews, "<div class=\"torrent_h\">[\n\r\t ]+<a href=\"/(engine/download.php\\?id=[0-9]+)\"").Groups[1].Value;
 
-                        byte[] torrent = await HttpClient.Download($"https://tr.anidub.com/{tid}", referer: url, useproxy: true);
+                        byte[] torrent = await HttpClient.Download($"{AppInit.conf.Anidub.host}/{tid}", referer: url, useproxy: AppInit.conf.Anidub.useproxy);
                         magnet = BencodeTo.Magnet(torrent);
                         sizeName = BencodeTo.SizeName(torrent);
 
                         if (string.IsNullOrWhiteSpace(magnet))
                             continue;
                         #endregion
+
+                        Console.WriteLine(JsonConvert.SerializeObject(new TorrentDetails()
+                        {
+                            trackerName = "anidub",
+                            types = new string[] { "anime" },
+                            url = url,
+                            title = title,
+                            sid = 1,
+                            sizeName = sizeName,
+                            createTime = createTime,
+                            magnet = magnet,
+                            name = name,
+                            originalname = originalname,
+                            relased = relased
+                        }, Formatting.Indented));
 
                         tParse.AddOrUpdate(new TorrentDetails()
                         {
