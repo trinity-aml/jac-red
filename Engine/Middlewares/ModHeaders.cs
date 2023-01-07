@@ -26,7 +26,7 @@ namespace JacRed.Engine.Middlewares
                         return Task.CompletedTask;
                 }
 
-                if (httpContext.Request.Path.Value.StartsWith("/cron/"))
+                if (httpContext.Request.Path.Value.StartsWith("/cron/") || httpContext.Request.Path.Value.StartsWith("/jsondb"))
                     return Task.CompletedTask;
             }
 
