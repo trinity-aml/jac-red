@@ -19,7 +19,6 @@ namespace JacRed.Controllers.CRON
     {
         static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/nnmclub_taskParse.json"));
 
-
         #region Parse
         async public Task<string> Parse(int page)
         {
@@ -36,18 +35,7 @@ namespace JacRed.Controllers.CRON
             // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
             foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
             {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page);
-                if (!res)
-                {
-                    if (countreset > 2)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
+                await parsePage(cat, page);
                 log += $"{cat} - {page}\n";
             }
 

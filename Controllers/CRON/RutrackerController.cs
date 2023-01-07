@@ -92,18 +92,7 @@ namespace JacRed.Controllers.CRON
 
             foreach (string cat in new List<string>() { "22", "1950", "921", "930", "1457", "313", "312", "312", "119", "1803", "266", "81", "9", "1105", "1389" })
             {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page, parseMagnet: true);
-                if (!res)
-                {
-                    if (countreset > 5)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
+                await parsePage(cat, page, parseMagnet: true);
                 log += $"{cat} - {page}\n";
             }
 

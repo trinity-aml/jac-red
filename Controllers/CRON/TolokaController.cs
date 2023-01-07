@@ -107,7 +107,7 @@ namespace JacRed.Controllers.CRON
         #endregion
 
         #region UpdateTasksParse
-        async public Task<string> UpdateTasksParse(bool saveDb)
+        async public Task<string> UpdateTasksParse()
         {
             #region Авторизация
             if (Cookie(memoryCache) == null)

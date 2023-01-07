@@ -107,18 +107,7 @@ namespace JacRed.Controllers.CRON
                 "21", "22"
             })
             {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page, parseMagnet: true);
-                if (!res)
-                {
-                    if (countreset > 5)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
+                await parsePage(cat, page, parseMagnet: true);
                 log += $"{cat} - {page}\n";
             }
 

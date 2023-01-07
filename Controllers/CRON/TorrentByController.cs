@@ -35,18 +35,7 @@ namespace JacRed.Controllers.CRON
             // anime     - Аниме                | Аниме
             foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
             {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page);
-                if (!res)
-                {
-                    if (countreset > 5)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
+                await Task.Delay(2000);
                 log += $"{cat} - {page}\n";
             }
 

@@ -55,11 +55,11 @@ namespace JacRed
         public string apikey = null;
 
 
-        public TrackerSettings Rutor = new TrackerSettings("http://rutor.info", priority: "torrent");
+        public TrackerSettings Rutor = new TrackerSettings("http://rutor.info");
 
         public TrackerSettings Megapeer = new TrackerSettings("http://megapeer.vip");
 
-        public TrackerSettings TorrentBy = new TrackerSettings("https://torrent.by", priority: "torrent");
+        public TrackerSettings TorrentBy = new TrackerSettings("https://torrent.by");
 
         public TrackerSettings Kinozal = new TrackerSettings("https://kinozal.tv");
 
@@ -67,15 +67,15 @@ namespace JacRed
 
         public TrackerSettings Bitru = new TrackerSettings("https://bitru.org");
 
-        public TrackerSettings Toloka = new TrackerSettings("https://toloka.to", enable: false);
+        public TrackerSettings Toloka = new TrackerSettings("https://toloka.to");
 
-        public TrackerSettings Rutracker = new TrackerSettings("https://rutracker.net", enable: false, priority: "torrent");
+        public TrackerSettings Rutracker = new TrackerSettings("https://rutracker.net");
 
-        public TrackerSettings Selezen = new TrackerSettings("https://selezen.org", enable: false, priority: "torrent");
+        public TrackerSettings Selezen = new TrackerSettings("https://selezen.org");
 
         public TrackerSettings Anilibria = new TrackerSettings("https://www.anilibria.tv");
 
-        public TrackerSettings Animelayer = new TrackerSettings("http://animelayer.ru", enable: false);
+        public TrackerSettings Animelayer = new TrackerSettings("http://animelayer.ru");
 
         public TrackerSettings Anidub = new TrackerSettings("https://tr.anidub.com");
 

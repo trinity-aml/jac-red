@@ -29,18 +29,7 @@ namespace JacRed.Controllers.CRON
             // serial    - Сериалы   | Сериалы
             foreach (string cat in new List<string>() { "movie", "serial" })
             {
-                int countreset = 0;
-                reset: bool res = await parsePage(cat, page, parseMagnet: true);
-                if (!res)
-                {
-                    if (countreset > 2)
-                        continue;
-
-                    await Task.Delay(2000);
-                    countreset++;
-                    goto reset;
-                }
-
+                await parsePage(cat, page, parseMagnet: true);
                 log += $"{cat} - {page}\n";
             }
 
