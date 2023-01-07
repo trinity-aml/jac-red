@@ -82,7 +82,7 @@ namespace JacRed.Controllers.CRON
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(bool firstpage)
+        async public Task<string> Parse(int maxpage = 1)
         {
             #region Авторизация
             if (Cookie == null)
@@ -99,15 +99,8 @@ namespace JacRed.Controllers.CRON
 
             try
             {
-                if (firstpage)
-                {
-                    await parsePage(1);
-                }
-                else
-                {
-                    for (int page = 1; page <= 90; page++)
-                        await parsePage(page);
-                }
+                for (int page = 1; page <= maxpage; page++)
+                    await parsePage(page);
             }
             catch { }
 
@@ -206,41 +199,45 @@ namespace JacRed.Controllers.CRON
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
+                    #region Обновляем/Получаем Magnet
+                    string magnet = null;
+                    string sizeName = null;
+
                     if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title != title)
                     {
-                        #region Обновляем/Получаем Magnet
-                        string magnet = null;
-                        string sizeName = null;
-
                         byte[] torrent = await HttpClient.Download($"{url}download/", cookie: Cookie);
                         magnet = BencodeTo.Magnet(torrent);
                         sizeName = BencodeTo.SizeName(torrent);
-
-                        if (string.IsNullOrWhiteSpace(magnet))
-                            continue;
-                        #endregion
-
-                        int.TryParse(_sid, out int sid);
-                        int.TryParse(_pir, out int pir);
-
-                        tParse.AddOrUpdate(new TorrentDetails()
-                        {
-                            trackerName = "animelayer",
-                            types = new string[] { "anime" },
-                            url = url,
-                            title = title,
-                            sid = sid,
-                            pir = pir,
-                            sizeName = sizeName,
-                            createTime = createTime,
-                            magnet = magnet,
-                            name = name,
-                            originalname = originalname,
-                            relased = relased
-                        });
-
-                        await Task.Delay(AppInit.conf.Animelayer.parseDelay);
                     }
+                    else
+                    {
+                        magnet = _tcache.magnet;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(magnet))
+                        continue;
+                    #endregion
+
+                    int.TryParse(_sid, out int sid);
+                    int.TryParse(_pir, out int pir);
+
+                    tParse.AddOrUpdate(new TorrentDetails()
+                    {
+                        trackerName = "animelayer",
+                        types = new string[] { "anime" },
+                        url = url,
+                        title = title,
+                        sid = sid,
+                        pir = pir,
+                        sizeName = sizeName,
+                        createTime = createTime,
+                        magnet = magnet,
+                        name = name,
+                        originalname = originalname,
+                        relased = relased
+                    });
+
+                    await Task.Delay(AppInit.conf.Animelayer.parseDelay);
                 }
             }
 
