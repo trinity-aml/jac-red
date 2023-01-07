@@ -27,7 +27,10 @@ namespace JacRed.Controllers.CRON
 
                 var roots = await HttpClient.Get<List<RootObject>>("http://api.anilibria.tv/v2/getUpdates?limit=-1", MaxResponseContentBufferSize: 200_000_000, timeoutSeconds: 60 * 5, IgnoreDeserializeObject: true, useproxy: AppInit.conf.Anilibria.useproxy);
                 if (roots == null || roots.Count == 0)
+                {
+                    workParse = false;
                     return "root == null";
+                }
 
                 foreach (var root in roots)
                 {
