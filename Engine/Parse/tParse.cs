@@ -17,8 +17,7 @@ namespace JacRed.Engine.Parse
 
         static tParse()
         {
-            if (File.Exists("Data/torrents.json") || File.Exists("Data/torrents.json.gz"))
-                db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
+            db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
 
             foreach (var item in db)
                 AddOrUpdateSearchDb(item.Value);
@@ -159,6 +158,9 @@ namespace JacRed.Engine.Parse
             try
             {
                 JsonStream.Write("Data/torrents.json", db);
+
+                if (!File.Exists($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz"))
+                    File.Copy("Data/torrents.json.gz", $"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz");
             }
             catch { }
         }
