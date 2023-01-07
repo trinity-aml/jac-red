@@ -34,7 +34,7 @@ namespace JacRed.Controllers.CRON
             // 7  - Мультипликация             | Мультфильмы, Мультсериалы
             // 10 - Аниме                      | Аниме
             // 17 - Иностранные релизы         | UA озвучка
-            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", /*"17"*/ })
+            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
             {
                 bool res = await parsePage(cat, page);
                 log += $"{cat} - {page} / {res}\n";
@@ -56,7 +56,7 @@ namespace JacRed.Controllers.CRON
             // 7  - Мультипликация             | Мультфильмы, Мультсериалы
             // 10 - Аниме                      | Аниме
             // 17 - Иностранные релизы         | UA озвучка
-            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", /*"17"*/ })
+            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
             {
                 string html = await HttpClient.Get($"{AppInit.conf.Rutor.host}/browse/0/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
                 if (html == null)
@@ -158,6 +158,9 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || title.ToLower().Contains("трейлер") || string.IsNullOrWhiteSpace(_sid) || string.IsNullOrWhiteSpace(_pir) || string.IsNullOrWhiteSpace(sizeName) || string.IsNullOrWhiteSpace(magnet))
                     continue;
 
+                if (cat == "17" && !title.Contains(" UKR"))
+                    continue;
+
                 url = $"{AppInit.conf.Rutor.host}/{url}";
                 #endregion
 
@@ -165,7 +168,7 @@ namespace JacRed.Controllers.CRON
                 int relased = 0;
                 string name = null, originalname = null;
 
-                if (cat == "1")
+                if (cat == "1" || cat == "17")
                 {
                     #region Зарубежные фильмы
                     var g = Regex.Match(title, "^([^/]+) / ([^/]+) / ([^/\\(]+) \\(([0-9]{4})\\)").Groups;
