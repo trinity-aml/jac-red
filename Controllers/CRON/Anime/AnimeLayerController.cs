@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/animelayer/[action]")]
+    [Route("/cron/animelayer/[action]")]
     public class AnimeLayerController : BaseController
     {
         #region TakeLogin
@@ -27,22 +27,26 @@ namespace JacRed.Controllers.CRON
                     AllowAutoRedirect = false
                 };
 
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
                 using (var client = new System.Net.Http.HttpClient(clientHandler))
                 {
+                    client.Timeout = TimeSpan.FromSeconds(10);
                     client.MaxResponseContentBufferSize = 2000000; // 2MB
                     client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
 
-                    var postParams = new Dictionary<string, string>();
-                    postParams.Add("login", AppInit.animelayerLogin.u);
-                    postParams.Add("password", AppInit.animelayerLogin.p);
+                    var postParams = new Dictionary<string, string>
+                    {
+                        { "login", AppInit.conf.Animelayer.login.u },
+                        { "password", AppInit.conf.Animelayer.login.p }
+                    };
 
                     using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
                     {
-                        using (var response = await client.PostAsync("http://animelayer.ru/auth/login/", postContent))
+                        using (var response = await client.PostAsync($"{AppInit.conf.Animelayer.host}/auth/login/", postContent))
                         {
                             if (response.Headers.TryGetValues("Set-Cookie", out var cook))
                             {
-                                string layer_id = null, layer_hash = null, pass = null, member_id = null;
+                                string layer_id = null, layer_hash = null, PHPSESSID = null;
                                 foreach (string line in cook)
                                 {
                                     if (string.IsNullOrWhiteSpace(line))
@@ -54,16 +58,13 @@ namespace JacRed.Controllers.CRON
                                     if (line.Contains("layer_hash="))
                                         layer_hash = new Regex("layer_hash=([^;]+)(;|$)").Match(line).Groups[1].Value;
 
-                                    if (line.Contains("pass_hash="))
-                                        pass = new Regex("pass_hash=([^;]+)(;|$)").Match(line).Groups[1].Value;
-
-                                    if (line.Contains("member_id="))
-                                        member_id = new Regex("member_id=([^;]+)(;|$)").Match(line).Groups[1].Value;
+                                    if (line.Contains("PHPSESSID="))
+                                        PHPSESSID = new Regex("PHPSESSID=([^;]+)(;|$)").Match(line).Groups[1].Value;
                                 }
 
-                                if (!string.IsNullOrWhiteSpace(layer_id) && !string.IsNullOrWhiteSpace(layer_hash) && !string.IsNullOrWhiteSpace(pass))
+                                if (!string.IsNullOrWhiteSpace(layer_id) && !string.IsNullOrWhiteSpace(layer_hash) && !string.IsNullOrWhiteSpace(PHPSESSID))
                                 {
-                                    Cookie = $"layer_id={layer_id}; layer_hash={layer_hash}; member_id={member_id}; pass_hash={pass};";
+                                    Cookie = $"layer_id={layer_id}; layer_hash={layer_hash}; PHPSESSID={PHPSESSID};";
                                     return true;
                                 }
                             }
@@ -81,7 +82,7 @@ namespace JacRed.Controllers.CRON
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(int page = 1)
+        async public Task<string> Parse(bool firstpage)
         {
             #region Авторизация
             if (Cookie == null)
@@ -96,49 +97,21 @@ namespace JacRed.Controllers.CRON
 
             workParse = true;
 
-            int countreset = 0;
-            reset: bool res = await parsePage(page);
-            if (!res)
-            {
-                if (countreset > 2)
-                    return "error";
-
-                await Task.Delay(2000);
-                countreset++;
-                goto reset;
-            }
-
-            workParse = false;
-            return "ok";
-        }
-        #endregion
-
-        #region DevParse
-        static bool workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            #region Авторизация
-            if (Cookie == null)
-            {
-                if (await TakeLogin() == false)
-                    return "Не удалось авторизоваться";
-            }
-            #endregion
-
-            if (workDevParse)
-                return "work";
-
-            workDevParse = true;
-
             try
             {
-                for (int page = 1; page <= 96; page++)
-                    await parsePage(page);
+                if (firstpage)
+                {
+                    await parsePage(1);
+                }
+                else
+                {
+                    for (int page = 1; page <= 90; page++)
+                        await parsePage(page);
+                }
             }
             catch { }
 
-            workDevParse = false;
+            workParse = false;
             return "ok";
         }
         #endregion
@@ -147,7 +120,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get($"http://animelayer.ru/torrents/anime/?page={page}", useproxy: true);
+            string html = await HttpClient.Get($"{AppInit.conf.Animelayer.host}/torrents/anime/?page={page}", useproxy: AppInit.conf.Animelayer.useproxy);
             if (html == null || !html.Contains("id=\"wrapper\""))
                 return false;
 
@@ -191,10 +164,18 @@ namespace JacRed.Controllers.CRON
                 string url = gurl[1].Value;
                 string title = gurl[2].Value;
 
+                string _sid = Match("class=\"icon s-icons-upload\"></i>([0-9]+)");
+                string _pir = Match("class=\"icon s-icons-download\"></i>([0-9]+)");
+
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title))
                     continue;
 
-                url = "http://animelayer.ru/" + url + "/";
+                if (Regex.IsMatch(row, "Разрешение: ?</strong>1920x1080"))
+                    title += " [1080p]";
+                else if (Regex.IsMatch(row, "Разрешение: ?</strong>1280x720"))
+                    title += " [720p]";
+
+                url = $"{AppInit.conf.Animelayer.host}/{url}/";
                 #endregion
 
                 #region name / originalname
@@ -239,13 +220,17 @@ namespace JacRed.Controllers.CRON
                             continue;
                         #endregion
 
+                        int.TryParse(_sid, out int sid);
+                        int.TryParse(_pir, out int pir);
+
                         tParse.AddOrUpdate(new TorrentDetails()
                         {
                             trackerName = "animelayer",
                             types = new string[] { "anime" },
                             url = url,
                             title = title,
-                            sid = 1,
+                            sid = sid,
+                            pir = pir,
                             sizeName = sizeName,
                             createTime = createTime,
                             magnet = magnet,

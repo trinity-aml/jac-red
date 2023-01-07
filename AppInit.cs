@@ -15,8 +15,6 @@ namespace JacRed
         public static (string u, string p) baibakoLogin;
 
         public static (string u, string p) hamsterLogin;
-
-        public static (string u, string p) animelayerLogin;
         #endregion
 
 
