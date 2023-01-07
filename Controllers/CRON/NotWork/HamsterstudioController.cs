@@ -10,7 +10,7 @@ using JacRed.Models.tParse;
 using System.Collections.Generic;
 using JacRed.Engine;
 
-namespace JacRed.Controllers.CRON
+namespace JacRed.Controllers.CRON.NotWork
 {
     //[Route("cron/hamsterstudio/[action]")]
     public class HamsterstudioController : BaseController
