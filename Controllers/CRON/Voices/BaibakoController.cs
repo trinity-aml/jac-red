@@ -13,12 +13,12 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/baibako/[action]")]
+    [Route("/cron/baibako/[action]")]
     public class BaibakoController : BaseController
     {
+        #region TakeLogin
         static string cookie { get; set; }
 
-        #region TakeLogin
         async public static Task<bool> TakeLogin()
         {
             try
@@ -33,13 +33,15 @@ namespace JacRed.Controllers.CRON
                     client.MaxResponseContentBufferSize = 2000000; // 2MB
                     client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36");
 
-                    var postParams = new Dictionary<string, string>();
-                    postParams.Add("username", AppInit.baibakoLogin.u);
-                    postParams.Add("password", AppInit.baibakoLogin.p);
+                    var postParams = new Dictionary<string, string>
+                    {
+                        { "username", AppInit.conf.Baibako.login.u },
+                        { "password", AppInit.conf.Baibako.login.p }
+                    };
 
                     using (var postContent = new System.Net.Http.FormUrlEncodedContent(postParams))
                     {
-                        using (var response = await client.PostAsync("http://baibako.tv/takelogin.php", postContent))
+                        using (var response = await client.PostAsync($"{AppInit.conf.Baibako.host}/takelogin.php", postContent))
                         {
                             if (response.Headers.TryGetValues("Set-Cookie", out var cook))
                             {
@@ -79,7 +81,7 @@ namespace JacRed.Controllers.CRON
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(int page)
+        async public Task<string> Parse(int maxpage)
         {
             #region Авторизация
             if (cookie == null)
@@ -94,47 +96,14 @@ namespace JacRed.Controllers.CRON
 
             workParse = true;
 
-            if (page > 0)
-            {
-                await parsePage(page);
-            }
-            else
-            {
-                await parsePage(0);
-                await parsePage(1);
-            }
-
-            workParse = false;
-            return "ok";
-        }
-        #endregion
-
-        #region DevParse
-        static bool workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            #region Авторизация
-            if (cookie == null)
-            {
-                if (await TakeLogin() == false)
-                    return "Не удалось авторизоваться";
-            }
-            #endregion
-
-            if (workDevParse)
-                return "work";
-
-            workDevParse = true;
-
             try
             {
-                for (int page = 1; page <= 418; page++)
+                for (int page = 0; page <= maxpage; page++)
                     await parsePage(page);
             }
             catch { }
 
-            workDevParse = false;
+            workParse = false;
             return "ok";
         }
         #endregion
@@ -143,7 +112,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get($"http://baibako.tv/browse.php?page={page}", encoding: Encoding.GetEncoding(1251), cookie: cookie);
+            string html = await HttpClient.Get($"{AppInit.conf.Baibako.host}/browse.php?page={page}", encoding: Encoding.GetEncoding(1251), cookie: cookie);
             if (html == null || !html.Contains("id=\"navtop\""))
                 return false;
 
@@ -177,7 +146,7 @@ namespace JacRed.Controllers.CRON
                 if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(title) || !Regex.IsMatch(title, "(1080p|720p)"))
                     continue;
 
-                url = "http://baibako.tv/" + url;
+                url = $"{AppInit.conf.Baibako.host}/{url}";
                 #endregion
 
                 #region name / originalname
@@ -203,7 +172,7 @@ namespace JacRed.Controllers.CRON
                         string magnet = null;
                         string sizeName = null;
 
-                        byte[] torrent = await HttpClient.Download("http://baibako.tv/" + Match("href=\"/?(download.php\\?id=([0-9]+))\""), cookie: cookie);
+                        byte[] torrent = await HttpClient.Download($"{AppInit.conf.Baibako.host}/" + Match("href=\"/?(download.php\\?id=([0-9]+))\""), cookie: cookie);
                         magnet = BencodeTo.Magnet(torrent);
                         sizeName = BencodeTo.SizeName(torrent);
 

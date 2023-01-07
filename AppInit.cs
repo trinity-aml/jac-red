@@ -80,6 +80,8 @@ namespace JacRed
 
         public TrackerSettings Rezka = new TrackerSettings("https://rezka.cc");
 
+        public TrackerSettings Baibako = new TrackerSettings("http://baibako.tv");
+
 
         public ProxySettings proxy = new ProxySettings();
 
