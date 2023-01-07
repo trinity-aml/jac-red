@@ -19,20 +19,6 @@ namespace JacRed.Engine.Parse
         {
             db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
 
-#warning УДАЛИТЬ ЧЕРЕЗ ПАРУ РЕЛИЗОВ
-            foreach (var item in db)
-            {
-                if (item.Value.trackerName == "nnmclub" && !item.Key.Contains("/forum/"))
-                {
-                    string url = item.Key.Replace(AppInit.conf.NNMClub.host, $"{AppInit.conf.NNMClub.host}/forum");
-                    if (db.TryRemove(item.Key, out TorrentDetails d))
-                    {
-                        d.url = url;
-                        db.TryAdd(url, d);
-                    }
-                }
-            }
-
             foreach (var item in db)
                 AddOrUpdateSearchDb(item.Value);
         }
