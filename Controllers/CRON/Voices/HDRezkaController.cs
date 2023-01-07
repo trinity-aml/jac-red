@@ -11,47 +11,27 @@ using JacRed.Engine;
 
 namespace JacRed.Controllers.CRON
 {
-    //[Route("cron/hdrezka/[action]")]
+    [Route("/cron/hdrezka/[action]")]
     public class HDRezkaController : BaseController
     {
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(int page = 1)
+        async public Task<string> Parse(int maxpage = 1)
         {
             if (workParse)
                 return "work";
 
             workParse = true;
 
-            string log = "";
-
-            if (await parsePage(page))
-                log += $"{page}\n";
-
-            workParse = false;
-            return string.IsNullOrWhiteSpace(log) ? "ok" : log;
-        }
-        #endregion
-
-        #region DevParse
-        static bool workDevParse = false;
-
-        async public Task<string> DevParse()
-        {
-            if (workDevParse)
-                return "work";
-
-            workDevParse = true;
-
             try
             {
-                for (int page = 1; page <= 74; page++)
+                for (int page = 1; page <= maxpage; page++)
                     await parsePage(page);
             }
             catch { }
 
-            workDevParse = false;
+            workParse = false;
             return "ok";
         }
         #endregion
@@ -60,7 +40,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get($"https://rezka.cc" + (page > 1 ? $"/page/{page}" : ""), useproxy: true);
+            string html = await HttpClient.Get(AppInit.conf.Rezka.host + (page > 1 ? $"/page/{page}" : ""), useproxy: AppInit.conf.Rezka.useproxy);
             if (html == null || !html.Contains("id=\"main_wrapper\""))
                 return false;
 
@@ -108,11 +88,11 @@ namespace JacRed.Controllers.CRON
 
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    url = "https://rezka.cc/" + url;
-
-                    if (!tParse.TryGetValue(url, out TorrentDetails _tcache))
+                    if (!tParse.TryGetValue($"rezka:{url}", out _))
                     {
-                        string fulnews = await HttpClient.Get(url, useproxy: true);
+                        url = $"{AppInit.conf.Rezka.host}/{url}";
+
+                        string fulnews = await HttpClient.Get(url, useproxy: AppInit.conf.Rezka.useproxy);
                         if (fulnews == null)
                             continue;
 
@@ -147,7 +127,7 @@ namespace JacRed.Controllers.CRON
                             if (string.IsNullOrWhiteSpace(tid))
                                 continue;
 
-                            torrent = await HttpClient.Download($"https://rezka.cc/{tid}", referer: url, useproxy: true);
+                            torrent = await HttpClient.Download($"{AppInit.conf.Rezka.host}/{tid}", referer: url, useproxy: AppInit.conf.Rezka.useproxy);
                             magnet = BencodeTo.Magnet(torrent);
                             sizeName = BencodeTo.SizeName(torrent);
                             quality = q;
@@ -160,12 +140,14 @@ namespace JacRed.Controllers.CRON
                             continue;
                         #endregion
 
+                        string info = fulnews.Contains("<img title=\"Украинский\"") ? ", UKR" : fulnews.Contains("<u>ненормативная лексика</u>") ? ", 18+": null;
+
                         tParse.AddOrUpdate(new TorrentDetails()
                         {
                             trackerName = "hdrezka",
                             types = types,
                             url = url,
-                            title = $"{name} / {originalname} {(string.IsNullOrWhiteSpace(siparam) ? "" : $"/ {siparam.ToLower()} ")}[{relased}, {quality}]",
+                            title = $"{name} / {originalname} {(string.IsNullOrWhiteSpace(siparam) ? "" : $"/ {siparam.ToLower()} ")}[{relased}, {quality}{info}]",
                             sid = 1,
                             sizeName = sizeName,
                             createTime = createTime,

@@ -79,6 +79,8 @@ namespace JacRed
 
         public TrackerSettings Anidub = new TrackerSettings("https://tr.anidub.com");
 
+        public TrackerSettings Rezka = new TrackerSettings("https://rezka.cc");
+
 
         public ProxySettings proxy = new ProxySettings();
 

@@ -19,7 +19,7 @@ namespace JacRed.Controllers.CRON
         #region Parse
         static bool workParse = false;
 
-        async public Task<string> Parse(bool firstpage)
+        async public Task<string> Parse(bool fullparse)
         {
             if (workParse)
                 return "work";
@@ -28,12 +28,7 @@ namespace JacRed.Controllers.CRON
 
             try
             {
-                if (firstpage)
-                {
-                    foreach (string cat in new List<string>() { "anime_tv/anime_ongoing", "anime_tv/shonen", "anime_ova", "anime_movie" })
-                        await parsePage(cat, 1);
-                }
-                else
+                if (fullparse)
                 {
                     for (int page = 1; page <= 4; page++)
                         await parsePage("anime_tv/anime_ongoing", page);
@@ -46,6 +41,11 @@ namespace JacRed.Controllers.CRON
 
                     for (int page = 1; page <= 124; page++)
                         await parsePage("anime_tv/full", page);
+                }
+                else
+                {
+                    foreach (string cat in new List<string>() { "anime_tv/anime_ongoing", "anime_tv/shonen", "anime_ova", "anime_movie" })
+                        await parsePage(cat, 1);
                 }
             }
             catch { }
