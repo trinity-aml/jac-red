@@ -100,7 +100,12 @@ namespace JacRed.Controllers.CRON
             try
             {
                 for (int page = 1; page <= maxpage; page++)
+                {
+                    if (page > 1)
+                        await Task.Delay(AppInit.conf.Animelayer.parseDelay);
+
                     await parsePage(page);
+                }
             }
             catch { }
 

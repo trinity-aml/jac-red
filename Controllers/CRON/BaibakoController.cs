@@ -99,7 +99,12 @@ namespace JacRed.Controllers.CRON
             try
             {
                 for (int page = 0; page <= maxpage; page++)
+                {
+                    if (page > 1)
+                        await Task.Delay(AppInit.conf.Baibako.parseDelay);
+
                     await parsePage(page);
+                }
             }
             catch { }
 

@@ -62,7 +62,12 @@ namespace JacRed.Controllers.CRON
             try
             {
                 for (int i = 1; i <= maxpage; i++)
+                {
+                    if (i > 1)
+                        await Task.Delay(AppInit.conf.Lostfilm.parseDelay);
+
                     await parsePage(i);
+                }
             }
             catch { }
 

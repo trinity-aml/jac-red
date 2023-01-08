@@ -50,15 +50,15 @@ namespace JacRed
 
         public TrackerSettings TorrentBy = new TrackerSettings("https://torrent.by");
 
-        public TrackerSettings Kinozal = new TrackerSettings("https://kinozal.tv");
+        public TrackerSettings Kinozal = new TrackerSettings("https://kinozal.tv", reqMinute: 7);
 
-        public TrackerSettings NNMClub = new TrackerSettings("https://nnmclub.to");
+        public TrackerSettings NNMClub = new TrackerSettings("https://nnmclub.to", reqMinute: 9);
 
         public TrackerSettings Bitru = new TrackerSettings("https://bitru.org");
 
         public TrackerSettings Toloka = new TrackerSettings("https://toloka.to");
 
-        public TrackerSettings Rutracker = new TrackerSettings("https://rutracker.net");
+        public TrackerSettings Rutracker = new TrackerSettings("https://rutracker.net", reqMinute: 7);
 
         public TrackerSettings Selezen = new TrackerSettings("https://selezen.org");
 
@@ -74,7 +74,7 @@ namespace JacRed
 
         public TrackerSettings Baibako = new TrackerSettings("http://baibako.tv");
 
-        public TrackerSettings Lostfilm = new TrackerSettings("https://www.lostfilm.tv");
+        public TrackerSettings Lostfilm = new TrackerSettings("https://www.lostfilm.tv", reqMinute: 2);
 
 
         public ProxySettings proxy = new ProxySettings();

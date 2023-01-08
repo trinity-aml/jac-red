@@ -32,16 +32,28 @@ namespace JacRed.Controllers.CRON
                 if (fullparse)
                 {
                     for (int page = 1; page <= 70; page++)
+                    {
+                        await Task.Delay(AppInit.conf.Anifilm.parseDelay);
                         await parsePage("serials", page, DateTime.Today.AddDays(-(2 * page)));
+                    }
 
                     for (int page = 1; page <= 32; page++)
+                    {
+                        await Task.Delay(AppInit.conf.Anifilm.parseDelay);
                         await parsePage("ova", page, DateTime.Today.AddDays(-(2 * page)));
+                    }
 
                     for (int page = 1; page <= 2; page++)
+                    {
+                        await Task.Delay(AppInit.conf.Anifilm.parseDelay);
                         await parsePage("ona", page, DateTime.Today.AddDays(-(2 * page)));
+                    }
 
                     for (int page = 1; page <= 17; page++)
+                    {
+                        await Task.Delay(AppInit.conf.Anifilm.parseDelay);
                         await parsePage("movies", page, DateTime.Today.AddDays(-(2 * page)));
+                    }
                 }
                 else
                 {
