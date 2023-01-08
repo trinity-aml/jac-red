@@ -35,9 +35,13 @@ namespace JacRed
         #endregion
 
 
+        public string listenip = "any";
+
         public int listenport = 9117;
 
         public string apikey = null;
+
+        public bool openstats = true;
 
 
         public TrackerSettings Rutor = new TrackerSettings("http://rutor.info");

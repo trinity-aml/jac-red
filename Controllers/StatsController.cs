@@ -12,41 +12,49 @@ namespace JacRed.Controllers
         #region Torrents
         public JsonResult Torrents(string trackerName)
         {
+            if (!AppInit.conf.openstats)
+                return Json(new { });
+
             if (string.IsNullOrWhiteSpace(trackerName))
             {
-                var _s = new List<dynamic>();
+                var stats = new Dictionary<string, (string lastnewtor, int newtor, int update, int nullParse, int alltorrents)>();
 
-                foreach (string tname in tParse.db.Values.Select(i => i.trackerName).ToHashSet())
+                foreach (var t in tParse.db.Values.OrderByDescending(i => i.createTime))
                 {
-                    var torrents = tParse.db.Values.Where(i => i.trackerName == tname);
+                    if (!stats.TryGetValue(t.trackerName, out var val))
+                        stats.Add(t.trackerName, (t.createTime.ToString("dd.MM.yyyy"), 0, 0, 0, 0));
 
-                    _s.Add(new
-                    {
-                        trackerName = tname,
-                        lastnewtor = torrents.OrderByDescending(i => i.createTime).FirstOrDefault()?.createTime.ToString("dd.MM.yyyy"),
-                        newtor = torrents.Count(i => i.createTime >= DateTime.Today),
-                        update = torrents.Count(i => i.updateTime >= DateTime.Today),
-                        actual = torrents.Count(i => i.updateTime >= DateTime.Today.AddDays(-20)),
-                        nullParse = torrents.Count(i => i.magnet == null),
-                        alltorrents = torrents.Count(),
-                    });
+                    var s = stats[t.trackerName];
+                    s.alltorrents = s.alltorrents + 1;
+
+                    if (t.createTime >= DateTime.Today)
+                        s.newtor = s.newtor + 1;
+
+                    if (t.updateTime >= DateTime.Today)
+                        s.update = s.update + 1;
+
+                    if (t.magnet == null)
+                        s.nullParse = s.nullParse + 1;
+
+                    stats[t.trackerName] = s;
                 }
 
-                return Json(_s.OrderByDescending(i => i.alltorrents));
+                return Json(stats.OrderByDescending(i => i.Value.alltorrents).Select(i => new 
+                {
+                    trackerName = i.Key,
+                    i.Value.lastnewtor,
+                    i.Value.newtor,
+                    i.Value.update,
+                    i.Value.nullParse,
+                    i.Value.alltorrents,
+                }));
             }
             else
             {
-                //return Json(tParse.db.Reverse().Where(i => i.Value.trackerName == trackerName && i.Value.magnet == null).Take(100));
-
                 var torrents = tParse.db.Values.Where(i => i.trackerName == trackerName);
 
                 return Json(new
                 {
-                    lastnewtor = torrents.OrderByDescending(i => i.createTime).FirstOrDefault()?.createTime.ToString("dd.MM.yyyy"),
-                    newtor = torrents.Count(i => i.createTime >= DateTime.Today),
-                    update = torrents.Count(i => i.updateTime >= DateTime.Today),
-                    actual = torrents.Count(i => i.updateTime >= DateTime.Today.AddDays(-20)),
-                    alltorrents = torrents.Count(),
                     nullParse = torrents.Where(i => i.magnet == null).OrderByDescending(i => i.createTime).Select(i =>
                     {
                         return new
