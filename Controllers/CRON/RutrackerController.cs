@@ -457,7 +457,7 @@ namespace JacRed.Controllers.CRON
                         {
                             var fullNews = await HttpClient.Get(url, useproxy: AppInit.conf.Rutracker.useproxy);
                             if (fullNews != null)
-                                magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"magnet-link\"").Groups[1].Value;
+                                magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"(med )?magnet-link\"").Groups[1].Value;
                         }
                     }
                     #endregion
@@ -635,7 +635,7 @@ namespace JacRed.Controllers.CRON
                     var fullNews = await HttpClient.Get(torrent.Key, useproxy: AppInit.conf.Rutracker.useproxy);
                     if (fullNews != null)
                     {
-                        string magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"magnet-link\"").Groups[1].Value;
+                        string magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"(med )?magnet-link\"").Groups[1].Value;
                         if (!string.IsNullOrWhiteSpace(magnet))
                             torrent.Value.magnet = magnet;
                     }
