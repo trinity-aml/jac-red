@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using JacRed.Engine.CORE;
 using JacRed.Models.tParse;
 
@@ -153,19 +154,22 @@ namespace JacRed.Engine.Parse
 
 
         #region SaveAndUpdateDB
-        public static void SaveAndUpdateDB()
+        public static Task SaveAndUpdateDB()
         {
             try
             {
-                JsonStream.Write("Data/torrents.json", db);
+                return Task.Run(() => 
+                {
+                    JsonStream.Write("Data/torrents.json", db);
 
-                if (!File.Exists($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz"))
-                    File.Copy("Data/torrents.json.gz", $"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz");
+                    if (!File.Exists($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz"))
+                        File.Copy("Data/torrents.json.gz", $"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz");
 
-                if (File.Exists($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz"))
-                    File.Delete($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz");
+                    if (File.Exists($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz"))
+                        File.Delete($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz");
+                });
             }
-            catch { }
+            catch { return Task.CompletedTask; }
         }
         #endregion
     }

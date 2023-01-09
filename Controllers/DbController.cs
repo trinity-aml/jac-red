@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using JacRed.Engine.Parse;
 using JacRed.Engine;
+using System.Threading.Tasks;
 
 namespace JacRed.Controllers
 {
@@ -9,7 +10,7 @@ namespace JacRed.Controllers
     {
         static bool _saveDbWork = false;
 
-        public string Save()
+        async public Task<string> Save()
         {
             if (_saveDbWork)
                 return "work";
@@ -18,7 +19,7 @@ namespace JacRed.Controllers
 
             try
             {
-                tParse.SaveAndUpdateDB();
+                await tParse.SaveAndUpdateDB();
             }
             catch { }
 

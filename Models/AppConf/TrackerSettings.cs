@@ -2,7 +2,7 @@
 {
     public class TrackerSettings
     {
-        public TrackerSettings(string host, bool useproxy = false, LoginSettings login = null, int reqMinute = 5)
+        public TrackerSettings(string host, bool useproxy = false, LoginSettings login = null, int reqMinute = 20)
         {
             this.host = host;
             this.useproxy = useproxy;
