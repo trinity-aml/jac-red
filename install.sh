@@ -1,4 +1,4 @@
-﻿#!/usr/bin/bash
+#!/usr/bin/bash
 DEST="/home/jacred"
 
 # Become root
@@ -41,6 +41,8 @@ EOF
 systemctl daemon-reload
 systemctl enable jacred
 systemctl start jacred
+
+crontab $DEST/Data/crontab
 
 # iptables drop
 cat <<EOF > iptables-drop.sh

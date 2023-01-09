@@ -5,8 +5,7 @@ curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | b
 Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Rutracker, Megapeer, Selezen, Toloka (UKR), Rezka, Baibako, LostFilm, Anilibria, Animelayer, Anifilm
 
 # Настройка
-1. Указать логины и пароли в init.conf
-2. Перенести в "crontab -e" данные с файла "Data/crontab"
+Указать логины и пароли в init.conf
 
 # Доступ к доменам .onion
 1. Запустить tor на порту 9050
@@ -20,7 +19,7 @@ Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Rutracker, Megapeer, Selezen, Toloka 
 {
   "listenport": 9120, // изменили порт
   "NNMClub": {        // изменили домен на адрес из сети tor 
-    "host": "http://nnmclub2vvjqzjne6q4rrozkkkdmlvnrcsyes2bbkm7e5ut2aproy4id.onion"
+    "alias": "http://nnmclub2vvjqzjne6q4rrozkkkdmlvnrcsyes2bbkm7e5ut2aproy4id.onion"
   },
   "globalproxy": [
     {

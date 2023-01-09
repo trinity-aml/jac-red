@@ -13,7 +13,7 @@
         }
 
 
-        public string host { get; set; }
+        public string host { get; }
 
         public string cookie { get; set; }
 
