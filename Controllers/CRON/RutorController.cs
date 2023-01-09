@@ -340,6 +340,7 @@ namespace JacRed.Controllers.CRON
                     {
                         case "1":
                         case "5":
+                        case "17":
                             types = new string[] { "movie" };
                             break;
                         case "4":
@@ -359,6 +360,9 @@ namespace JacRed.Controllers.CRON
                             types = new string[] { "anime" };
                             break;
                     }
+
+                    if (types == null)
+                        continue;
                     #endregion
 
                     int.TryParse(_sid, out int sid);

@@ -470,6 +470,9 @@ namespace JacRed.Controllers.CRON
                             types = new string[] { "multfilm", "multserial" };
                             break;
                     }
+
+                    if (types == null)
+                        continue;
                     #endregion
 
                     int.TryParse(_sid, out int sid);

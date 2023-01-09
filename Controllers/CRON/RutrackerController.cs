@@ -591,6 +591,9 @@ namespace JacRed.Controllers.CRON
                             types = new string[] { "tvshow" };
                             break;
                     }
+
+                    if (types == null)
+                        continue;
                     #endregion
 
                     int.TryParse(_sid, out int sid);
