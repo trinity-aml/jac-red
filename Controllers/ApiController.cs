@@ -79,6 +79,9 @@ namespace JacRed.Controllers
                 {
                     foreach (var t in val)
                     {
+                        if (t.types == null)
+                            continue;
+
                         string name = StringConvert.SearchName(t.name);
                         string originalname = StringConvert.SearchName(t.originalname);
 
@@ -214,6 +217,9 @@ namespace JacRed.Controllers
                                 if (StringConvert.SearchName(t.name) != _s && StringConvert.SearchName(t.originalname) != _s)
                                     continue;
                             }
+
+                            if (t.types == null)
+                                continue;
 
                             if (is_serial == 1)
                             {
