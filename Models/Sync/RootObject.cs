@@ -4,7 +4,7 @@ namespace JacRed.Models.Sync
 {
     public class RootObject
     {
-        public int count { get; set; }
+        public int take { get; set; }
 
         public List<Torrent> torrents { get; set; }
     }

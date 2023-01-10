@@ -24,7 +24,7 @@ namespace JacRed.Engine
                         if (lastsync == -1 && File.Exists("lastsync.txt"))
                             lastsync = long.Parse(File.ReadAllText("lastsync.txt"));
 
-                        var root = await HttpClient.Get<RootObject>($"{AppInit.conf.syncapi}/sync/torrents?time={lastsync}");
+                        var root = await HttpClient.Get<RootObject>($"{AppInit.conf.syncapi}/sync/torrents?time={lastsync}", MaxResponseContentBufferSize: 200_000_000);
                         if (root?.torrents != null && root.torrents.Count > 0)
                         {
                             foreach (var torrent in root.torrents)
@@ -44,7 +44,7 @@ namespace JacRed.Engine
                             lastsync = root.torrents.Last().value.updateTime.ToFileTimeUtc();
                             File.WriteAllText("lastsync.txt", lastsync.ToString());
 
-                            if (root.count > root.torrents.Count)
+                            if (root.take == root.torrents.Count)
                                 continue;
                         }
                     }
