@@ -75,6 +75,9 @@ namespace JacRed.Controllers
                     if (item.Value.quality > 0 && !forced)
                         continue;
 
+                    if (item.Value.types == null)
+                        continue;
+
                     // Титл для быстрого поиска
                     item.Value.search_title = StringConvert.SearchName(item.Value.title);
 

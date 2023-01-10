@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace JacRed.Models.tParse
 {
-    public class TorrentDetails
+    public class TorrentDetails : ICloneable
     {
         public string trackerName { get; set; }
 
@@ -63,5 +63,11 @@ namespace JacRed.Models.tParse
         [System.Text.Json.Serialization.JsonIgnore]
         public HashSet<int> seasons { get; set; } = new HashSet<int>();
         #endregion
+
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 }

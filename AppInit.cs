@@ -41,6 +41,8 @@ namespace JacRed
 
         public string apikey = null;
 
+        public bool mergeduplicates = true;
+
         public bool openstats = true;
 
 

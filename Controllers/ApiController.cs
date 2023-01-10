@@ -11,6 +11,8 @@ using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Tasks;
 using System;
+using System.Web;
+using MonoTorrent;
 
 namespace JacRed.Controllers
 {
@@ -304,9 +306,114 @@ namespace JacRed.Controllers
             }
             #endregion
 
+            #region Объединить дубликаты
+            var tsort = new List<TorrentDetails>();
+
+            if (!AppInit.conf.mergeduplicates)
+            {
+                tsort = torrents;
+            }
+            else 
+            {
+                Dictionary<string, (TorrentDetails torrent, string title, string Name, List<string> AnnounceUrls)> temp = new Dictionary<string, (TorrentDetails, string, string, List<string>)>();
+
+                foreach (var torrent in torrents)
+                {
+                    var magnetLink = MagnetLink.Parse(torrent.magnet);
+                    string hex = magnetLink.InfoHash.ToHex();
+
+                    if (!temp.TryGetValue(hex, out (TorrentDetails torrent, string title, string Name, List<string> AnnounceUrls) val))
+                    {
+                        temp.TryAdd(hex, ((TorrentDetails)torrent.Clone(), torrent.title, magnetLink.Name, magnetLink.AnnounceUrls?.ToList() ?? new List<string>()));
+                    }
+                    else
+                    {
+                        var t = temp[hex];
+                        t.torrent.trackerName += $", {torrent.trackerName}";
+
+                        #region UpdateMagnet
+                        void UpdateMagnet()
+                        {
+                            string magnet = $"magnet:?xt=urn:btih:{hex.ToLower()}";
+
+                            if (!string.IsNullOrWhiteSpace(t.Name))
+                                magnet += $"&dn={HttpUtility.UrlEncode(t.Name)}";
+
+                            if (t.AnnounceUrls.Count > 0)
+                                magnet += $"&tr={string.Join("&tr=", t.AnnounceUrls)}";
+
+                            t.torrent.magnet= magnet ;
+                        }
+                        #endregion
+
+                        if (string.IsNullOrWhiteSpace(t.Name) && !string.IsNullOrWhiteSpace(magnetLink.Name))
+                        {
+                            t.Name = magnetLink.Name;
+                            temp[hex] = t;
+                            UpdateMagnet();
+                        }
+
+                        if (magnetLink.AnnounceUrls != null && magnetLink.AnnounceUrls.Count > 0)
+                        {
+                            t.AnnounceUrls.AddRange(magnetLink.AnnounceUrls);
+                            UpdateMagnet();
+                        }
+
+                        #region UpdateTitle
+                        void UpdateTitle()
+                        {
+                            if (!torrent.trackerName.Contains("kinozal"))
+                                return;
+
+                            string title = t.title;
+
+                            if (t.torrent.voices != null && t.torrent.voices.Count > 0)
+                                title += $" | {string.Join(" | ", t.torrent.voices)}";
+
+                            t.torrent.title = title;
+                        }
+
+                        if (torrent.trackerName == "kinozal")
+                        {
+                            t.title = torrent.title;
+                            temp[hex] = t;
+                            UpdateTitle();
+                        }
+
+                        if (torrent.voices != null && torrent.voices.Count > 0)
+                        {
+                            if (t.torrent.voices == null)
+                            {
+                                t.torrent.voices = torrent.voices;
+                            }
+                            else
+                            {
+                                foreach (var v in torrent.voices)
+                                    t.torrent.voices.Add(v);
+                            }
+
+                            UpdateTitle();
+                        }
+                        #endregion
+
+                        if (torrent.sid > t.torrent.sid)
+                            t.torrent.sid = torrent.sid;
+
+                        if (torrent.pir > t.torrent.pir)
+                            t.torrent.pir = torrent.pir;
+
+                        if (torrent.createTime > t.torrent.createTime)
+                            t.torrent.createTime = torrent.createTime;
+                    }
+                }
+
+                tsort = temp.Select(i => i.Value.torrent).ToList();
+            }
+            #endregion
+
             return Content(JsonConvert.SerializeObject(new
             {
-                Results = torrents.Where(i => i.sid > 0 || i.trackerName == "toloka").OrderByDescending(i => i.createTime).Take(2_000).Select(i => new
+                Results = tsort.Where(i => i.sid > 0 || i.trackerName == "toloka").OrderByDescending(i => i.createTime).Take(2_000).Select(i => new
                 {
                     Tracker = i.trackerName,
                     Details = i.url != null && i.url.StartsWith("http") ? i.url : null,
