@@ -41,7 +41,7 @@ namespace JacRed.Engine
                                 tParse.db[torrent.key] = torrent.value;
                             }
 
-                            lastsync = root.torrents.Last().value.updateTime.ToBinary();
+                            lastsync = root.torrents.Last().value.updateTime.ToFileTimeUtc();
                             File.WriteAllText("lastsync.txt", lastsync.ToString());
 
                             if (root.count > root.torrents.Count)
