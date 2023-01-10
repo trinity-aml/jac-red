@@ -78,6 +78,9 @@ namespace JacRed.Controllers
                     if (item.Value.types == null)
                         continue;
 
+                    // sync
+                    item.Value.updateTime = DateTime.UtcNow;
+
                     // Титл для быстрого поиска
                     item.Value.search_title = StringConvert.SearchName(item.Value.title);
 

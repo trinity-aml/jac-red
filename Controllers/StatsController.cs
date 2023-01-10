@@ -9,7 +9,6 @@ namespace JacRed.Controllers
     [Route("/stats/[action]")]
     public class StatsController : Controller
     {
-        #region Torrents
         public JsonResult Torrents(string trackerName)
         {
             if (!AppInit.conf.openstats)
@@ -124,6 +123,5 @@ namespace JacRed.Controllers
                 });
             }
         }
-        #endregion
     }
 }

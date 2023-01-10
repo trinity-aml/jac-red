@@ -74,7 +74,7 @@ namespace JacRed.Controllers.CRON
             // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
             foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
             {
-                string html = await HttpClient.Get($"{AppInit.conf.NNMClub.host}/forum/portal.php?c={cat}", encoding: Encoding.GetEncoding(1251), timeoutSeconds: 10, useproxy: AppInit.conf.NNMClub.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.NNMClub.rqHost()}/forum/portal.php?c={cat}", encoding: Encoding.GetEncoding(1251), timeoutSeconds: 10, useproxy: AppInit.conf.NNMClub.useproxy);
                 if (html == null || !html.Contains("NNM-Club</title>"))
                     continue;
 
@@ -139,7 +139,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.NNMClub.host}/forum/portal.php?c={cat}&start={page * 20}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.NNMClub.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.NNMClub.rqHost()}/forum/portal.php?c={cat}&start={page * 20}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.NNMClub.useproxy);
             if (html == null || !html.Contains("NNM-Club</title>"))
                 return false;
 

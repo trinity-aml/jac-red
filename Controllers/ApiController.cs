@@ -28,6 +28,7 @@ namespace JacRed.Controllers
         [Route("/api/v2.0/indexers/{status}/results")]
         public ActionResult Jackett(string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
+            bool rqnum = false;
             var torrents = new List<TorrentDetails>();
 
             #region Запрос с NUM
@@ -38,6 +39,7 @@ namespace JacRed.Controllers
             {
                 if (Regex.IsMatch(mNum.Groups[2].Value, "[a-zA-Z]{4}"))
                 {
+                    rqnum = true;
                     var g = mNum.Groups;
 
                     title = g[1].Value;
@@ -309,7 +311,7 @@ namespace JacRed.Controllers
             #region Объединить дубликаты
             var tsort = new List<TorrentDetails>();
 
-            if (!AppInit.conf.mergeduplicates)
+            if (!AppInit.conf.mergeduplicates || rqnum)
             {
                 tsort = torrents;
             }
@@ -322,9 +324,9 @@ namespace JacRed.Controllers
                     var magnetLink = MagnetLink.Parse(torrent.magnet);
                     string hex = magnetLink.InfoHash.ToHex();
 
-                    if (!temp.TryGetValue(hex, out (TorrentDetails torrent, string title, string Name, List<string> AnnounceUrls) val))
+                    if (!temp.TryGetValue(hex, out _))
                     {
-                        temp.TryAdd(hex, ((TorrentDetails)torrent.Clone(), torrent.title, magnetLink.Name, magnetLink.AnnounceUrls?.ToList() ?? new List<string>()));
+                        temp.TryAdd(hex, ((TorrentDetails)torrent.Clone(), torrent.trackerName == "kinozal" ? torrent.title : null, magnetLink.Name, magnetLink.AnnounceUrls?.ToList() ?? new List<string>()));
                     }
                     else
                     {
@@ -362,7 +364,7 @@ namespace JacRed.Controllers
                         #region UpdateTitle
                         void UpdateTitle()
                         {
-                            if (!torrent.trackerName.Contains("kinozal"))
+                            if (string.IsNullOrWhiteSpace(t.title))
                                 return;
 
                             string title = t.title;

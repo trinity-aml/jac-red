@@ -15,6 +15,22 @@
 
         public string host { get; }
 
+        public string alias { get; set; }
+
+        public string rqHost(string uri = null) 
+        {
+            if (uri == null)
+            {
+                if (!string.IsNullOrWhiteSpace(alias))
+                    return alias;
+
+                return host;
+            }
+
+            return uri;
+        }
+
+
         public string cookie { get; set; }
 
         public bool useproxy { get; set; }
