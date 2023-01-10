@@ -1,9 +1,8 @@
 ﻿using JacRed.Engine.CORE;
 using JacRed.Engine.Parse;
+using JacRed.Models.Sync;
 using JacRed.Models.tParse;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,32 +24,28 @@ namespace JacRed.Engine
                         if (lastsync == -1 && File.Exists("lastsync.txt"))
                             lastsync = long.Parse(File.ReadAllText("lastsync.txt"));
 
-                        var root = await HttpClient.Get<JObject>($"{AppInit.conf.syncapi}/sync/torrents?time={lastsync}");
-                        if (root != null && root.ContainsKey("torrents"))
+                        var root = await HttpClient.Get<RootObject>($"{AppInit.conf.syncapi}/sync/torrents?time={lastsync}");
+                        if (root?.torrents != null && root.torrents.Count > 0)
                         {
-                            var torrents = root.Value<JArray>("torrents").ToObject<Dictionary<string, TorrentDetails>>();
-                            if (torrents != null && torrents.Count > 0)
+                            foreach (var torrent in root.torrents)
                             {
-                                foreach (var torrent in torrents)
+                                if (!tParse.db.TryGetValue(torrent.key, out TorrentDetails t))
                                 {
-                                    if (!tParse.db.TryGetValue(torrent.Key, out TorrentDetails t))
-                                    {
-                                        tParse.db.TryAdd(torrent.Key, torrent.Value);
-                                        continue;
-                                    }
-
-                                    if (t.updateTime > torrent.Value.updateTime)
-                                        continue;
-
-                                    tParse.db[torrent.Key] = torrent.Value;
+                                    tParse.db.TryAdd(torrent.key, torrent.value);
+                                    continue;
                                 }
 
-                                lastsync = torrents.Last().Value.updateTime.ToBinary();
-                                File.WriteAllText("lastsync.txt", lastsync.ToString());
-
-                                if (root.Value<int>("count") > torrents.Count)
+                                if (t.updateTime > torrent.value.updateTime)
                                     continue;
+
+                                tParse.db[torrent.key] = torrent.value;
                             }
+
+                            lastsync = root.torrents.Last().value.updateTime.ToBinary();
+                            File.WriteAllText("lastsync.txt", lastsync.ToString());
+
+                            if (root.count > root.torrents.Count)
+                                continue;
                         }
                     }
                 }
