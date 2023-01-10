@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace JacRed.Models.tParse
@@ -8,10 +7,8 @@ namespace JacRed.Models.tParse
     {
         public string trackerName { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public string[] types { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public string url { get; set; }
 
 
@@ -21,26 +18,20 @@ namespace JacRed.Models.tParse
 
         public int pir { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public double size { get; set; }
 
         public string sizeName { get; set; }
 
         public DateTime createTime { get; set; } = DateTime.Now;
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public DateTime updateTime { get; set; } = DateTime.Now;
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string magnet { get; set; }
 
 
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public string name { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string originalname { get; set; }
 
         public int relased { get; set; }
@@ -48,19 +39,14 @@ namespace JacRed.Models.tParse
 
 
         #region Быстрая сортировка
-        [System.Text.Json.Serialization.JsonIgnore]
         public string search_title { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public int quality { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public string videotype { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public HashSet<string> voices { get; set; } = new HashSet<string>();
 
-        [System.Text.Json.Serialization.JsonIgnore]
         public HashSet<int> seasons { get; set; } = new HashSet<int>();
         #endregion
 
