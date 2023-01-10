@@ -131,7 +131,7 @@ namespace JacRed.Engine.Parse
                 if (!string.IsNullOrWhiteSpace(torrent.sizeName))
                     _cache.sizeName = torrent.sizeName;
 
-                _cache.updateTime = DateTime.Now;
+                _cache.updateTime = DateTime.UtcNow;
 
                 if (torrent.createTime > _cache.createTime)
                     _cache.createTime = torrent.createTime;

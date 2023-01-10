@@ -45,6 +45,10 @@ namespace JacRed
 
         public bool openstats = true;
 
+        public bool opensync = false;
+
+        public string syncapi = null;
+
 
         public TrackerSettings Rutor = new TrackerSettings("http://rutor.info");
 

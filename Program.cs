@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using System.Net;
 using System.Globalization;
 using System.Text;
+using System.Threading;
+using JacRed.Engine;
 
 namespace JacRed
 {
@@ -10,6 +12,8 @@ namespace JacRed
     {
         public static void Main(string[] args)
         {
+            ThreadPool.QueueUserWorkItem(async _ => await SyncCron.Run());
+
             CultureInfo.CurrentCulture = new CultureInfo("ru-RU");
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
