@@ -51,7 +51,7 @@ namespace JacRed.Engine
                 }
                 catch { }
 
-                await Task.Delay(TimeSpan.FromHours(5));
+                await Task.Delay(TimeSpan.FromMinutes(5));
             }
         }
     }
