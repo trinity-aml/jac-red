@@ -18,7 +18,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/selezen/[action]")]
     public class SelezenController : BaseController
     {
-        static List<TaskParse> taskParse = JsonConvert.DeserializeObject<List<TaskParse>>(IO.File.ReadAllText("Data/temp/selezen_taskParse.json"));
+        static List<TaskParse> taskParse = new List<TaskParse>();
+
+        static SelezenController()
+        {
+            if (IO.File.Exists("Data/temp/selezen_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<List<TaskParse>>(IO.File.ReadAllText("Data/temp/selezen_taskParse.json"));
+        }
 
         #region Cookie / TakeLogin
         static string Cookie;

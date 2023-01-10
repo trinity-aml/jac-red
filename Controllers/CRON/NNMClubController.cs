@@ -17,7 +17,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/nnmclub/[action]")]
     public class NNMClubController : BaseController
     {
-        static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/nnmclub_taskParse.json"));
+        static Dictionary<string, List<TaskParse>> taskParse = new Dictionary<string, List<TaskParse>>();
+
+        static NNMClubController()
+        {
+            if (IO.File.Exists("Data/temp/nnmclub_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/nnmclub_taskParse.json"));
+        }
 
         #region Parse
         static bool _workParse = false;

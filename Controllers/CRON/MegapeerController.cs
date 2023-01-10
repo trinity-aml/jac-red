@@ -18,8 +18,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/megapeer/[action]")]
     public class MegapeerController : BaseController
     {
-        static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/megapeer_taskParse.json"));
+        static Dictionary<string, List<TaskParse>> taskParse = new Dictionary<string, List<TaskParse>>();
 
+        static MegapeerController()
+        {
+            if (IO.File.Exists("Data/temp/megapeer_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/megapeer_taskParse.json"));
+        }
 
         #region Parse
         static bool _workParse = false;

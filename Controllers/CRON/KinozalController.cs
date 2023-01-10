@@ -18,7 +18,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/kinozal/[action]")]
     public class KinozalController : BaseController
     {
-        static Dictionary<string, Dictionary<string, List<TaskParse>>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<TaskParse>>>>(IO.File.ReadAllText("Data/temp/kinozal_taskParse.json"));
+        static Dictionary<string, Dictionary<string, List<TaskParse>>> taskParse = new Dictionary<string, Dictionary<string, List<TaskParse>>>();
+
+        static KinozalController()
+        {
+            if (IO.File.Exists("Data/temp/kinozal_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<TaskParse>>>>(IO.File.ReadAllText("Data/temp/kinozal_taskParse.json"));
+        }
 
         #region Cookie / TakeLogin
         static string Cookie;

@@ -17,7 +17,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/bitru/[action]")]
     public class BitruController : BaseController
     {
-        static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/bitru_taskParse.json"));
+        static Dictionary<string, List<TaskParse>> taskParse = new Dictionary<string, List<TaskParse>>();
+
+        static BitruController()
+        {
+            if (IO.File.Exists("Data/temp/bitru_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/bitru_taskParse.json"));
+        }
 
 
         #region Parse

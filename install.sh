@@ -42,7 +42,7 @@ systemctl daemon-reload
 systemctl enable jacred
 systemctl start jacred
 
-crontab $DEST/Data/crontab
+crontab -l | { cat; echo "*/40 *   *   *   *    curl -s \"http://127.0.0.1:9117/jsondb/save\""; } | crontab -
 
 # iptables drop
 cat <<EOF > iptables-drop.sh
@@ -71,4 +71,7 @@ echo "Then [re]start it as systemctl [re]start jacred"
 echo ""
 echo "Clear iptables if port 9118 is not available"
 echo "bash $DEST/iptables-drop.sh"
+echo ""
+echo "Full setup crontab"
+echo "crontab $DEST/Data/crontab"
 echo ""

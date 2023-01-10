@@ -4,14 +4,11 @@ curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | b
 # Источники 
 Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Rutracker, Megapeer, Selezen, Toloka (UKR), Rezka, Baibako, LostFilm, Anilibria, Animelayer, Anifilm
 
-# Настройка
-Указать логины и пароли в init.conf
-
 # Доступ к доменам .onion
 1. Запустить tor на порту 9050
 2. В init.conf указать .onion домен в host
 
-# Пример init.conf
+# Настройка init.conf
 * Список всех параметров, а так же значения по умолчанию смотреть в example.conf 
 * В init.conf нужно указывать только те параметры, которые хотите изменить
 

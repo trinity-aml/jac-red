@@ -18,7 +18,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/rutracker/[action]")]
     public class RutrackerController : BaseController
     {
-        static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/rutracker_taskParse.json"));
+        static Dictionary<string, List<TaskParse>> taskParse = new Dictionary<string, List<TaskParse>>();
+
+        static RutrackerController()
+        {
+            if (IO.File.Exists("Data/temp/rutracker_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/rutracker_taskParse.json"));
+        }
 
         #region Cookie / TakeLogin
         static string Cookie;

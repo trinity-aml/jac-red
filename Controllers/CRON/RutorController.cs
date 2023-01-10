@@ -17,8 +17,13 @@ namespace JacRed.Controllers.CRON
     [Route("/cron/rutor/[action]")]
     public class RutorController : BaseController
     {
-        static Dictionary<string, List<TaskParse>> taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/rutor_taskParse.json"));
+        static Dictionary<string, List<TaskParse>> taskParse = new Dictionary<string, List<TaskParse>>();
 
+        static RutorController()
+        {
+            if (IO.File.Exists("Data/temp/rutor_taskParse.json"))
+                taskParse = JsonConvert.DeserializeObject<Dictionary<string, List<TaskParse>>>(IO.File.ReadAllText("Data/temp/rutor_taskParse.json"));
+        }
 
         #region Parse
         static bool _workParse = false;
