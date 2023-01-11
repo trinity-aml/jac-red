@@ -93,12 +93,12 @@ namespace JacRed.Controllers.CRON
 
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    tParse.TryGetValue($"rezka:{url}", out TorrentDetails _t);
+                    url = $"{AppInit.conf.Rezka.host}/{url}";
+
+                    tParse.TryGetValue(url, out TorrentDetails _t);
 
                     if (_t == null || (page == 1 && DateTime.Today >= _t.updateTime && row.Contains("PROPER")))
                     {
-                        url = $"{AppInit.conf.Rezka.host}/{url}";
-
                         string fulnews = await HttpClient.Get(url, useproxy: AppInit.conf.Rezka.useproxy);
                         if (fulnews == null)
                             continue;
@@ -107,7 +107,11 @@ namespace JacRed.Controllers.CRON
 
                         string siparam = Regex.Match(fulnews, "class=\"si-param\">(s[0-9]+e[0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
                         if (string.IsNullOrWhiteSpace(siparam) && type == "series")
-                            continue;
+                        {
+                            siparam = Regex.Match(fulnews, "class=\"si-param\">(s[0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                            if (string.IsNullOrWhiteSpace(siparam))
+                                continue;
+                        }
 
                         var g = Regex.Match(fulnews, "<div class=\"si-data\">[\n\r\t ]+<ul>[\n\r\t ]+<li>([^<]+)</li>[\n\r\t ]+<li>([0-9]{4})").Groups;
                         string originalname = g[1].Value.Split("/")[0].Trim();
