@@ -162,10 +162,15 @@ namespace JacRed.Controllers.CRON
                         continue;
 
                     #region Дата создания
-                    DateTime createTime = page == 1 ? DateTime.Now : tParse.ParseCreateTime(Match("<div class=\"right-part\">([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})</div>"), "dd.MM.yyyy");
+                    DateTime createTime = tParse.ParseCreateTime(Match("<div class=\"right-part\">([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})</div>"), "dd.MM.yyyy");
 
                     if (createTime == default)
-                        continue;
+                    {
+                        if (page != 1)
+                            continue;
+
+                        createTime = DateTime.Now;
+                    }
                     #endregion
 
                     #region Данные раздачи

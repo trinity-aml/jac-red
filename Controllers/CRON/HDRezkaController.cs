@@ -93,7 +93,9 @@ namespace JacRed.Controllers.CRON
 
                 if (!string.IsNullOrWhiteSpace(url))
                 {
-                    if (!tParse.TryGetValue($"rezka:{url}", out _))
+                    tParse.TryGetValue($"rezka:{url}", out TorrentDetails _t);
+
+                    if (_t == null || (page == 1 && DateTime.Today >= _t.updateTime && row.Contains("PROPER")))
                     {
                         url = $"{AppInit.conf.Rezka.host}/{url}";
 
@@ -113,10 +115,15 @@ namespace JacRed.Controllers.CRON
                             continue;
 
                         #region Дата создания
-                        DateTime createTime = page == 1 ? DateTime.Now : tParse.ParseCreateTime(Regex.Match(fulnews, "class=\"si-date\">(Добавлено|Опубликовано) ([^<]+)<").Groups[2].Value, "dd.MM.yyyy");
+                        DateTime createTime = tParse.ParseCreateTime(Regex.Match(fulnews, "class=\"si-date\">(Добавлено|Опубликовано|Обновлено) ([^<]+)<").Groups[2].Value, "dd.MM.yyyy");
 
                         if (createTime == default)
-                            continue;
+                        {
+                            if (page != 1)
+                                continue;
+
+                            createTime = DateTime.Now;
+                        }
                         #endregion
 
                         #region Обновляем/Получаем Magnet
@@ -155,7 +162,7 @@ namespace JacRed.Controllers.CRON
                             title = $"{name} / {originalname} {(string.IsNullOrWhiteSpace(siparam) ? "" : $"/ {siparam.ToLower()} ")}[{relased}, {quality}{info}]",
                             sid = 1,
                             sizeName = sizeName,
-                            createTime = createTime,
+                            createTime = _t != null ? _t.createTime : createTime,
                             magnet = magnet,
                             name = name,
                             originalname = originalname,
