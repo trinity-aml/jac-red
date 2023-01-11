@@ -189,13 +189,18 @@ namespace JacRed.Controllers.CRON
                     #region relased
                     int relased = 0;
 
-                    if (System.IO.File.Exists($"Data/temp/lostfilm/{HashTo.md5(url)}"))
+                    string serieName = Regex.Match(url, "https?://www.lostfilm.tv/series/([^/]+)").Groups[1].Value;
+                    if (string.IsNullOrWhiteSpace(serieName))
+                        continue;
+
+                    string relasedPath = $"Data/temp/lostfilm/{serieName}.relased";
+                    if (System.IO.File.Exists(relasedPath))
                     {
-                        relased = int.Parse(System.IO.File.ReadAllText($"Data/temp/lostfilm/{HashTo.md5(url)}"));
+                        relased = int.Parse(System.IO.File.ReadAllText(relasedPath));
                     }
                     else
                     {
-                        string series = await cloudHttp.GetStringAsync(Regex.Match(url, "(https?://www.lostfilm.tv/series/[^/]+)").Groups[1].Value);
+                        string series = await cloudHttp.GetStringAsync($"{AppInit.conf.Lostfilm.host}/series/{serieName}");
                         if (series != null)
                         {
                             string dateCreated = Regex.Match(series, "itemprop=\"dateCreated\" content=\"([0-9]{4})-[0-9]{2}-[0-9]{2}\"").Groups[1].Value;
@@ -204,7 +209,7 @@ namespace JacRed.Controllers.CRON
                         }
 
                         if (relased > 0)
-                            System.IO.File.WriteAllText($"Data/temp/lostfilm/{HashTo.md5(url)}", relased.ToString());
+                            System.IO.File.WriteAllText(relasedPath, relased.ToString());
                         else
                             continue;
                     }

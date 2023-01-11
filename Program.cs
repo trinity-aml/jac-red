@@ -5,6 +5,9 @@ using System.Globalization;
 using System.Text;
 using System.Threading;
 using JacRed.Engine;
+using JacRed.Engine.CORE;
+using JacRed.Models.tParse;
+using System.Collections.Concurrent;
 
 namespace JacRed
 {
@@ -12,6 +15,23 @@ namespace JacRed
     {
         public static void Main(string[] args)
         {
+            //var db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
+            //var dblost = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/lost.json");
+
+            //foreach (var torrent in dblost)
+            //{
+            //    if (torrent.Value.trackerName != "lostfilm" && torrent.Value.trackerName != "hdrezka")
+            //        continue;
+
+            //    if (db.ContainsKey(torrent.Key))
+            //        continue;
+
+            //    db.TryAdd(torrent.Key, torrent.Value);
+            //}
+
+            //JsonStream.Write("Data/torrents.json", db);
+
+
             ThreadPool.QueueUserWorkItem(async _ => await SyncCron.Run());
 
             CultureInfo.CurrentCulture = new CultureInfo("ru-RU");
