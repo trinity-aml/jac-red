@@ -535,7 +535,10 @@ namespace JacRed.Controllers.CRON
                         // Инфо хеш
                         string torrentHash = new Regex("<ul><li>Инфо хеш: +([^<]+)</li>").Match(srv_details).Groups[1].Value;
                         if (!string.IsNullOrWhiteSpace(torrentHash))
+                        {
                             torrent.Value.magnet = $"magnet:?xt=urn:btih:{torrentHash}";
+                            torrent.Value.updateTime = DateTime.UtcNow;
+                        }
                     }
                 }
             }

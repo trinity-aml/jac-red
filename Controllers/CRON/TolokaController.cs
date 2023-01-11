@@ -450,7 +450,10 @@ namespace JacRed.Controllers.CRON
                             string magnet = BencodeTo.Magnet(await HttpClient.Download($"{AppInit.conf.Toloka.host}/download.php?id={downloadId}", cookie: Cookie(memoryCache), referer: AppInit.conf.Toloka.host));
 
                             if (!string.IsNullOrWhiteSpace(magnet))
+                            {
                                 torrent.Value.magnet = magnet;
+                                torrent.Value.updateTime = DateTime.UtcNow;
+                            }
                         }
                     }
                 }

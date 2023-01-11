@@ -379,7 +379,10 @@ namespace JacRed.Controllers.CRON
                     string magnet = BencodeTo.Magnet(_t);
 
                     if (!string.IsNullOrWhiteSpace(magnet))
+                    {
                         torrent.Value.magnet = magnet;
+                        torrent.Value.updateTime = DateTime.UtcNow;
+                    }
                 }
             }
             catch { }

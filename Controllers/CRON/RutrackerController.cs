@@ -646,7 +646,10 @@ namespace JacRed.Controllers.CRON
                     {
                         string magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"(med )?magnet-link\"").Groups[1].Value;
                         if (!string.IsNullOrWhiteSpace(magnet))
+                        {
                             torrent.Value.magnet = magnet;
+                            torrent.Value.updateTime = DateTime.UtcNow;
+                        }
                     }
                 }
             }

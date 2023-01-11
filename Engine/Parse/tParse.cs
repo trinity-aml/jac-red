@@ -165,8 +165,8 @@ namespace JacRed.Engine.Parse
                     if (!File.Exists($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz"))
                         File.Copy("Data/torrents.json.gz", $"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.gz");
 
-                    if (File.Exists($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz"))
-                        File.Delete($"Data/torrents_{DateTime.Today.AddDays(-3):dd-MM-yyyy}.json.gz");
+                    if (File.Exists($"Data/torrents_{DateTime.Today.AddDays(-2):dd-MM-yyyy}.json.gz"))
+                        File.Delete($"Data/torrents_{DateTime.Today.AddDays(-2):dd-MM-yyyy}.json.gz");
                 });
             }
             catch { return Task.CompletedTask; }
