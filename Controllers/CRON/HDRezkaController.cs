@@ -49,7 +49,7 @@ namespace JacRed.Controllers.CRON
             if (html == null || !html.Contains("id=\"main_wrapper\""))
                 return false;
 
-            foreach (string row in tParse.ReplaceBadNames(html).Split("<a ").Skip(1))
+            foreach (string row in tParse.ReplaceBadNames(html).Split("<a ").Skip(1).Reverse())
             {
                 #region Локальный метод - Match
                 string Match(string pattern, int index = 1)
@@ -113,7 +113,7 @@ namespace JacRed.Controllers.CRON
                             continue;
 
                         #region Дата создания
-                        DateTime createTime = tParse.ParseCreateTime(Regex.Match(fulnews, "class=\"si-date\">(Добавлено|Опубликовано) ([^<]+)<").Groups[2].Value, "dd.MM.yyyy");
+                        DateTime createTime = page == 1 ? DateTime.Now : tParse.ParseCreateTime(Regex.Match(fulnews, "class=\"si-date\">(Добавлено|Опубликовано) ([^<]+)<").Groups[2].Value, "dd.MM.yyyy");
 
                         if (createTime == default)
                             continue;
