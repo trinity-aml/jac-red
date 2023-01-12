@@ -2,7 +2,7 @@
 {
     public class TrackerSettings
     {
-        public TrackerSettings(string host, bool useproxy = false, LoginSettings login = null, int reqMinute = 14)
+        public TrackerSettings(string host, bool useproxy = false, LoginSettings login = null, int reqMinute = 8)
         {
             this.host = host;
             this.useproxy = useproxy;
@@ -17,7 +17,7 @@
 
         public string alias { get; set; }
 
-        public string rqHost(string uri = null) 
+        public string rqHost(string uri = null)
         {
             if (uri == null)
             {
@@ -37,7 +37,22 @@
 
         public int reqMinute { get; set; }
 
-        public int parseDelay => reqMinute >= 60 || reqMinute <= 0 ? 1000 : (60 / reqMinute) * 1000;
+        public int parseDelay 
+        { 
+            get 
+            {
+                if (reqMinute == -1)
+                    return 10;
+
+                if (reqMinute >= 60)
+                    return 1000;
+
+                if (reqMinute <= 0)
+                    return 60_000;
+
+                return (60 / reqMinute) * 1000;
+            }
+        }
 
         public LoginSettings login { get; set; } = new LoginSettings();
     }
