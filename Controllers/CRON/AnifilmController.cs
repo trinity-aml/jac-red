@@ -106,10 +106,10 @@ namespace JacRed.Controllers.CRON
                     continue;
 
                 url = $"{AppInit.conf.Anifilm.host}/{url}";
-                string title = $"{name} / {originalname} ({episodes})";
+                string title = $"{name} / {originalname}";
 
                 if (!string.IsNullOrWhiteSpace(episodes))
-                    title = title += $" ({episodes})";
+                    title += $" ({episodes})";
                 #endregion
 
                 // Год выхода
