@@ -67,7 +67,7 @@ namespace JacRed.Controllers.CRON
             foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime", "sport" })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.host}/{cat}/", timeoutSeconds: 10, useproxy: AppInit.conf.TorrentBy.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.rqHost()}/{cat}/", timeoutSeconds: 10, useproxy: AppInit.conf.TorrentBy.useproxy);
                 if (html == null)
                     continue;
 
@@ -132,7 +132,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.host}/{cat}/?page={page}", useproxy: AppInit.conf.TorrentBy.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.rqHost()}/{cat}/?page={page}", useproxy: AppInit.conf.TorrentBy.useproxy);
             if (html == null)
                 return false;
 

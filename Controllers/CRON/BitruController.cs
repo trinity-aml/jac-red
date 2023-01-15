@@ -51,7 +51,7 @@ namespace JacRed.Controllers.CRON
             foreach (string cat in new List<string>() { "movie", "serial" })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"{AppInit.conf.Bitru.host}/browse.php?tmp={cat}", timeoutSeconds: 10, useproxy: AppInit.conf.Bitru.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.Bitru.rqHost()}/browse.php?tmp={cat}", timeoutSeconds: 10, useproxy: AppInit.conf.Bitru.useproxy);
                 if (html == null)
                     continue;
 
@@ -116,7 +116,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, bool parseMagnet = false)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.Bitru.host}/browse.php?tmp={cat}&page={page}", useproxy: AppInit.conf.Bitru.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.Bitru.rqHost()}/browse.php?tmp={cat}&page={page}", useproxy: AppInit.conf.Bitru.useproxy);
             if (html == null || !html.Contains("id=\"logo\""))
                 return false;
 
@@ -315,7 +315,7 @@ namespace JacRed.Controllers.CRON
                         }
                         else
                         {
-                            byte[] torrent = await HttpClient.Download($"{AppInit.conf.Bitru.host}/download.php?id={id}", referer: $"{AppInit.conf.Bitru.host}/details.php?id={id}", useproxy: AppInit.conf.Bitru.useproxy);
+                            byte[] torrent = await HttpClient.Download($"{AppInit.conf.Bitru.rqHost()}/download.php?id={id}", referer: $"{AppInit.conf.Bitru.rqHost()}/details.php?id={id}", useproxy: AppInit.conf.Bitru.useproxy);
                             magnet = BencodeTo.Magnet(torrent);
                         }
                     }

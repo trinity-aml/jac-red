@@ -45,7 +45,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(int page)
         {
-            string html = await HttpClient.Get(AppInit.conf.Rezka.host + (page > 1 ? $"/page/{page}" : ""), useproxy: AppInit.conf.Rezka.useproxy);
+            string html = await HttpClient.Get(AppInit.conf.Rezka.rqHost() + (page > 1 ? $"/page/{page}" : ""), useproxy: AppInit.conf.Rezka.useproxy);
             if (html == null || !html.Contains("id=\"main_wrapper\""))
                 return false;
 
@@ -143,7 +143,7 @@ namespace JacRed.Controllers.CRON
                             if (string.IsNullOrWhiteSpace(tid))
                                 continue;
 
-                            torrent = await HttpClient.Download($"{AppInit.conf.Rezka.host}/{tid}", referer: url, useproxy: AppInit.conf.Rezka.useproxy);
+                            torrent = await HttpClient.Download($"{AppInit.conf.Rezka.rqHost()}/{tid}", referer: url, useproxy: AppInit.conf.Rezka.useproxy);
                             magnet = BencodeTo.Magnet(torrent);
                             sizeName = BencodeTo.SizeName(torrent);
                             quality = q;

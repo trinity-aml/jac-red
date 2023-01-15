@@ -64,7 +64,7 @@ namespace JacRed.Controllers.CRON
         {
             foreach (string cat in new List<string>() { "174", "79", "6", "5", "55", "57", "76" })
             {
-                string html = await HttpClient.Get($"{AppInit.conf.Megapeer.host}/browse.php?cat={cat}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.Megapeer.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.Megapeer.rqHost()}/browse.php?cat={cat}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.Megapeer.useproxy);
                 if (html == null)
                     continue;
 
@@ -130,7 +130,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.Megapeer.host}/browse.php?cat={cat}&page={page}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.Megapeer.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.Megapeer.rqHost()}/browse.php?cat={cat}&page={page}", encoding: Encoding.GetEncoding(1251), useproxy: AppInit.conf.Megapeer.useproxy);
             if (html == null || !html.Contains("id=\"logo\""))
                 return false;
 

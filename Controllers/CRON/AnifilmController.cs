@@ -75,7 +75,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page, DateTime createTime)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.Anifilm.host}/releases/page/{page}?category={cat}", useproxy: AppInit.conf.Anifilm.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.Anifilm.rqHost()}/releases/page/{page}?category={cat}", useproxy: AppInit.conf.Anifilm.useproxy);
             if (html == null || !html.Contains("id=\"ui-components\""))
                 return false;
 
