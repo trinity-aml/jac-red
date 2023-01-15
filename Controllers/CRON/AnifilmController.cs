@@ -171,15 +171,18 @@ namespace JacRed.Controllers.CRON
                         if (string.IsNullOrWhiteSpace(tid))
                             tid = Regex.Match(fullNews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
 
-                        byte[] t = await HttpClient.Download($"{AppInit.conf.Anifilm.host}/{tid}", referer: torrent.Key, useproxy: AppInit.conf.Anifilm.useproxy);
-                        string magnet = BencodeTo.Magnet(t);
-
-                        if (!string.IsNullOrWhiteSpace(magnet))
+                        if (!string.IsNullOrWhiteSpace(tid))
                         {
-                            torrent.Value.magnet = magnet;
-                            torrent.Value.title = title;
-                            torrent.Value.updateTime = DateTime.UtcNow;
-                            torrent.Value.sizeName = BencodeTo.SizeName(t);
+                            byte[] t = await HttpClient.Download($"{AppInit.conf.Anifilm.host}/{tid}", referer: torrent.Key, useproxy: AppInit.conf.Anifilm.useproxy);
+                            string magnet = BencodeTo.Magnet(t);
+
+                            if (!string.IsNullOrWhiteSpace(magnet))
+                            {
+                                torrent.Value.magnet = magnet;
+                                torrent.Value.title = title;
+                                torrent.Value.updateTime = DateTime.UtcNow;
+                                torrent.Value.sizeName = BencodeTo.SizeName(t);
+                            }
                         }
                     }
                 }
