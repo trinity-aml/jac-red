@@ -9,7 +9,12 @@ namespace JacRed.Engine.CORE
         #region Read
         public static T Read<T>(string path)
         {
-            var serializer = new JsonSerializer();
+            var settings = new JsonSerializerSettings 
+            { 
+                Error = (se, ev) => { ev.ErrorContext.Handled = true; } 
+            };
+
+            var serializer = JsonSerializer.Create(settings);
 
             using (Stream file = File.Exists($"{path}.gz") ? new GZipStream(File.OpenRead($"{path}.gz"), CompressionMode.Decompress) : File.OpenRead(path))
             {

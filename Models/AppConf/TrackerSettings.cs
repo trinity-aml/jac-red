@@ -27,7 +27,10 @@
                 return host;
             }
 
-            return uri;
+            if (string.IsNullOrWhiteSpace(alias))
+                return uri;
+
+            return uri.Replace(host, alias);
         }
 
 

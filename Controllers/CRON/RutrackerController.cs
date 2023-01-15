@@ -759,7 +759,7 @@ namespace JacRed.Controllers.CRON
             {
                 foreach (var torrent in tParse.db.Where(i => i.Value.trackerName == "rutracker" && string.IsNullOrWhiteSpace(i.Value.magnet)))
                 {
-                    var fullNews = await HttpClient.Get(torrent.Key, useproxy: AppInit.conf.Rutracker.useproxy);
+                    var fullNews = await HttpClient.Get(AppInit.conf.Rutracker.rqHost(torrent.Key), useproxy: AppInit.conf.Rutracker.useproxy);
                     if (fullNews != null)
                     {
                         string magnet = Regex.Match(fullNews, "href=\"(magnet:[^\"]+)\" class=\"(med )?magnet-link\"").Groups[1].Value;
