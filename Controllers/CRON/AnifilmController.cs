@@ -116,7 +116,7 @@ namespace JacRed.Controllers.CRON
                     string magnet = null;
                     string sizeName = null;
 
-                    string fulnews = await HttpClient.Get(url, useproxy: true);
+                    string fulnews = await HttpClient.Get(url, useproxy: AppInit.conf.Anifilm.useproxy);
                     if (fulnews == null)
                         continue;
 
