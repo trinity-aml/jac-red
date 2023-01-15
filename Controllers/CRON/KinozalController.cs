@@ -291,7 +291,7 @@ namespace JacRed.Controllers.CRON
                 int relased = 0;
                 string name = null, originalname = null;
 
-                if (cat is "8" or "6" or "15" or "17" or "35" or "39" or "13" or "14" or "24" or "11" or "9" or "47" or "18" or "37" or "12" or "10" or "7" or "16" or "20")
+                if (cat is "8" or "6" or "15" or "17" or "35" or "39" or "13" or "14" or "24" or "11" or "9" or "47" or "18" or "37" or "12" or "10" or "7" or "16")
                 {
                     #region Фильмы
                     // Бэд трип (Приколисты в дороге) / Bad Trip / 2020 / ДБ, СТ / WEB-DLRip (AVC)
@@ -346,7 +346,7 @@ namespace JacRed.Controllers.CRON
                     }
                     #endregion
                 }
-                else if (cat == "46" || cat == "21")
+                else if (cat == "46" || cat == "21" || cat == "20")
                 {
                     #region Сериал - Буржуйский
                     if (row.Contains("сезон"))
@@ -470,6 +470,9 @@ namespace JacRed.Controllers.CRON
                         case "18":
                         case "37":
                         case "12":
+                        case "10":
+                        case "7":
+                        case "16":
                             types = new string[] { "movie" };
                             break;
                         case "45":
