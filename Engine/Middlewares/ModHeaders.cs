@@ -21,14 +21,17 @@ namespace JacRed.Engine.Middlewares
 
             if (httpContext.Connection.RemoteIpAddress.ToString() != "127.0.0.1")
             {
+                if (httpContext.Request.Path.Value.StartsWith("/cron/") || httpContext.Request.Path.Value.StartsWith("/jsondb"))
+                    return Task.CompletedTask;
+
                 if (!string.IsNullOrWhiteSpace(AppInit.conf.apikey))
                 {
+                    if (httpContext.Request.Path.Value == "/" || Regex.IsMatch(httpContext.Request.Path.Value, "^/(api/v1\\.0/conf|stats/|sync/)"))
+                        return _next(httpContext);
+
                     if (AppInit.conf.apikey != Regex.Match(httpContext.Request.QueryString.Value, "(\\?|&)apikey=([^&]+)").Groups[2].Value)
                         return Task.CompletedTask;
                 }
-
-                if (httpContext.Request.Path.Value.StartsWith("/cron/") || httpContext.Request.Path.Value.StartsWith("/jsondb"))
-                    return Task.CompletedTask;
             }
 
             return _next(httpContext);
