@@ -415,7 +415,7 @@ namespace JacRed.Controllers
 
             return Content(JsonConvert.SerializeObject(new
             {
-                Results = tsort.Where(i => i.sid > 0 || i.trackerName == "toloka").OrderByDescending(i => i.createTime).Take(2_000).Select(i => new
+                Results = tsort.OrderByDescending(i => i.createTime).Take(2_000).Select(i => new
                 {
                     Tracker = i.trackerName,
                     Details = i.url != null && i.url.StartsWith("http") ? i.url : null,
@@ -474,6 +474,9 @@ namespace JacRed.Controllers
                 {
                     foreach (var t in val)
                     {
+                        if (t.types == null)
+                            continue;
+
                         if (string.IsNullOrWhiteSpace(type) || t.types.Contains(type))
                         {
                             string _n = StringConvert.SearchName(t.name);
@@ -493,6 +496,9 @@ namespace JacRed.Controllers
                 {
                     foreach (var t in val)
                     {
+                        if (t.types == null)
+                            continue;
+
                         if (string.IsNullOrWhiteSpace(type) || t.types.Contains(type))
                             torrents.Add(t);
                     }
@@ -540,7 +546,7 @@ namespace JacRed.Controllers
                 query = query.Where(i => i.seasons.Contains((int)season));
             #endregion
 
-            return Json(query.Where(i => i.sid > 0 || i.trackerName == "toloka").Take(5_000).Select(i => new
+            return Json(query.Take(5_000).Select(i => new
             {
                 tracker = i.trackerName,
                 url = i.url != null && i.url.StartsWith("http") ? i.url : null,

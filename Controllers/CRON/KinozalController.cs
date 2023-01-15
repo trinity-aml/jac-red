@@ -112,13 +112,16 @@ namespace JacRed.Controllers.CRON
                     "45", "46", 
 
                     // Фильмы
-                    "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12",
+                    "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12", "10", "7", "16",
 
                     // ТВ-шоу
                     "49", "50",
 
                     // Мульты
-                    "21", "22"
+                    "21", "22",
+
+                    // Аниме
+                    "20"
                 })
                 {
                     await parsePage(cat, page, parseMagnet: true);
@@ -141,13 +144,16 @@ namespace JacRed.Controllers.CRON
                 "45", "46", 
 
                 // Фильмы
-                "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12",
+                "8", "6", "15", "17", "35", "39", "13", "14", "24", "11", "9", "47", "18", "37", "12", "10", "7", "16",
 
                 // ТВ-шоу
                 "49", "50",
 
                 // Мульты
-                "21", "22"
+                "21", "22",
+
+                // Аниме
+                "20"
             })
             {
                 for (int year = DateTime.Today.Year; year >= 1990; year--)
@@ -285,7 +291,7 @@ namespace JacRed.Controllers.CRON
                 int relased = 0;
                 string name = null, originalname = null;
 
-                if (cat is "8" or "6" or "15" or "17" or "35" or "39" or "13" or "14" or "24" or "11" or "9" or "47" or "18" or "37" or "12")
+                if (cat is "8" or "6" or "15" or "17" or "35" or "39" or "13" or "14" or "24" or "11" or "9" or "47" or "18" or "37" or "12" or "10" or "7" or "16" or "20")
                 {
                     #region Фильмы
                     // Бэд трип (Приколисты в дороге) / Bad Trip / 2020 / ДБ, СТ / WEB-DLRip (AVC)
@@ -407,6 +413,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     // Id новости
@@ -474,6 +483,9 @@ namespace JacRed.Controllers.CRON
                         case "21":
                         case "22":
                             types = new string[] { "multfilm", "multserial" };
+                            break;
+                        case "20":
+                            types = new string[] { "anime" };
                             break;
                     }
 

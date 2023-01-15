@@ -166,6 +166,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 // Год выхода
                 int relased = 0;
 

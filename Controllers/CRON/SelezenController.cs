@@ -245,6 +245,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     // Удаляем торрент где титл не совпадает (возможно обновлен, добавлена серия и т.д)

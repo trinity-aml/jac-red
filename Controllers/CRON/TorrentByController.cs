@@ -47,7 +47,8 @@ namespace JacRed.Controllers.CRON
                 // humor     - Юмор                 | ТВ Шоу
                 // cartoons  - Мультфильмы          | Мультфильмы, Мультсериалы
                 // anime     - Аниме                | Аниме
-                foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
+                // sport     - Спорт                | Спорт
+                foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime", "sport" })
                 {
                     await parsePage(cat, page);
                     log += $"{cat} - {page}\n";
@@ -63,14 +64,7 @@ namespace JacRed.Controllers.CRON
         #region UpdateTasksParse
         async public Task<string> UpdateTasksParse()
         {
-            // films     - Зарубежные фильмы    | Фильмы
-            // movies    - Наши фильмы          | Фильмы
-            // serials   - Сериалы              | Сериалы
-            // tv        - Телевизор            | ТВ Шоу
-            // humor     - Юмор                 | ТВ Шоу
-            // cartoons  - Мультфильмы          | Мультфильмы, Мультсериалы
-            // anime     - Аниме                | Аниме
-            foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime" })
+            foreach (string cat in new List<string>() { "films", "movies", "serials", "tv", "humor", "cartoons", "anime", "sport" })
             {
                 // Получаем html
                 string html = await HttpClient.Get($"{AppInit.conf.TorrentBy.host}/{cat}/", timeoutSeconds: 10, useproxy: AppInit.conf.TorrentBy.useproxy);
@@ -284,9 +278,9 @@ namespace JacRed.Controllers.CRON
                     }
                     #endregion
                 }
-                else if (cat == "cartoons" || cat == "anime" || cat == "tv" || cat == "humor")
+                else if (cat == "cartoons" || cat == "anime" || cat == "tv" || cat == "humor" || cat == "sport")
                 {
-                    #region Мультфильмы / Аниме / Телевизор / Юмор
+                    #region Мультфильмы / Аниме / Телевизор / Юмор / Спорт
                     if (title.Contains(" / "))
                     {
                         if (title.Contains("[") && title.Contains("]"))
@@ -364,6 +358,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     #region types
@@ -386,6 +383,9 @@ namespace JacRed.Controllers.CRON
                             break;
                         case "anime":
                             types = new string[] { "anime" };
+                            break;
+                        case "sport":
+                            types = new string[] { "sport" };
                             break;
                     }
 

@@ -290,6 +290,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     // Id новости

@@ -47,7 +47,8 @@ namespace JacRed.Controllers.CRON
                 // 23 - Док. и телепередачи   | Док. сериалы, Док. фильмы
                 // 1  - Аниме и Манга         | Аниме
                 // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
-                foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
+                // 11 - HD, UHD и 3D Кино     | Фильмы
+                foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7", "11" })
                 {
                     await parsePage(cat, page);
                     log += $"{cat} - {page}\n";
@@ -63,16 +64,7 @@ namespace JacRed.Controllers.CRON
         #region UpdateTasksParse
         async public Task<string> UpdateTasksParse()
         {
-            // 10 - Новинки кино          | Фильмы
-            // 13 - Наше кино             | Фильмы
-            // 6  - Зарубежное кино       | Фильмы
-            // 4  - Наши сериалы          | Сериалы
-            // 3  - Зарубежные сериалы    | Сериалы
-            // 22 - Док. TV-бренды        | Док. сериалы, Док. фильмы
-            // 23 - Док. и телепередачи   | Док. сериалы, Док. фильмы
-            // 1  - Аниме и Манга         | Аниме
-            // 7  - Детям и родителям     | Мультфильмы, Мультсериалы
-            foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7" })
+            foreach (string cat in new List<string>() { "10", "13", "6", "4", "3", "22", "23", "1", "7", "11" })
             {
                 string html = await HttpClient.Get($"{AppInit.conf.NNMClub.rqHost()}/forum/portal.php?c={cat}", encoding: Encoding.GetEncoding(1251), timeoutSeconds: 10, useproxy: AppInit.conf.NNMClub.useproxy);
                 if (html == null || !html.Contains("NNM-Club</title>"))
@@ -186,7 +178,7 @@ namespace JacRed.Controllers.CRON
                 int relased = 0;
                 string name = null, originalname = null;
 
-                if (cat == "10" || cat == "6" || cat == "3" || cat == "22" || cat == "23")
+                if (cat == "10" || cat == "6" || cat == "3" || cat == "22" || cat == "23" || cat == "11")
                 {
                     #region Новинки кино / Зарубежное кино / Зарубежные сериалы / Док. TV-бренды / Док. и телепередачи
                     // Крестная мама (Наркомама) / La Daronne / Mama Weed (2020)
@@ -457,6 +449,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     #region types
@@ -466,6 +461,7 @@ namespace JacRed.Controllers.CRON
                         case "10":
                         case "13":
                         case "6":
+                        case "11":
                             types = new string[] { "movie" };
                             break;
                         case "4":

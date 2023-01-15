@@ -46,8 +46,10 @@ namespace JacRed.Controllers.CRON
                 // 6  - Телевизор                  | ТВ Шоу
                 // 7  - Мультипликация             | Мультфильмы, Мультсериалы
                 // 10 - Аниме                      | Аниме
-                // 17 - Иностранные релизы         | UA озвучка
-                foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
+                // 17 - Иностранные релизы         | Фильмы (UKR)
+                // 13 - Спорт и Здоровье           | Спорт
+                // 15 - Юмор                       | ТВ Шоу
+                foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17", "13", "15" })
                 {
                     bool res = await parsePage(cat, page);
                     log += $"{cat} - {page} / {res}\n";
@@ -63,18 +65,9 @@ namespace JacRed.Controllers.CRON
         #region UpdateTasksParse
         async public Task<string> UpdateTasksParse()
         {
-            // 1  - Зарубежные фильмы          | Фильмы
-            // 5  - Наши фильмы                | Фильмы
-            // 4  - Зарубежные сериалы         | Сериалы
-            // 16 - Наши сериалы               | Сериалы
-            // 12 - Научно-популярные фильмы   | Док. сериалы, Док. фильмы
-            // 6  - Телевизор                  | ТВ Шоу
-            // 7  - Мультипликация             | Мультфильмы, Мультсериалы
-            // 10 - Аниме                      | Аниме
-            // 17 - Иностранные релизы         | UA озвучка
-            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17" })
+            foreach (string cat in new List<string>() { "1", "5", "4", "16", "12", "6", "7", "10", "17", "13", "15" })
             {
-                string html = await HttpClient.Get($"{AppInit.conf.Rutor.host}/browse/0/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.Rutor.rqHost()}/browse/0/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
                 if (html == null)
                     continue;
 
@@ -139,7 +132,7 @@ namespace JacRed.Controllers.CRON
         #region parsePage
         async Task<bool> parsePage(string cat, int page)
         {
-            string html = await HttpClient.Get($"{AppInit.conf.Rutor.host}/browse/{page}/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
+            string html = await HttpClient.Get($"{AppInit.conf.Rutor.rqHost()}/browse/{page}/{cat}/0/0", useproxy: AppInit.conf.Rutor.useproxy);
             if (html == null)
                 return false;
 
@@ -264,9 +257,9 @@ namespace JacRed.Controllers.CRON
                         relased = _yer;
                     #endregion
                 }
-                else if (cat == "12" || cat == "6" || cat == "7" || cat == "10")
+                else if (cat == "12" || cat == "6" || cat == "7" || cat == "10" || cat == "15" || cat == "13")
                 {
-                    #region Научно-популярные фильмы / Телевизор / Мультипликация / Аниме
+                    #region Научно-популярные фильмы / Телевизор / Мультипликация / Аниме / Юмор / Спорт и Здоровье
                     if (title.Contains(" / "))
                     {
                         if (title.Contains("[") && title.Contains("]"))
@@ -337,6 +330,9 @@ namespace JacRed.Controllers.CRON
                 }
                 #endregion
 
+                if (string.IsNullOrWhiteSpace(name))
+                    name = Regex.Split(title, "(\\[|\\/|\\(|\\|)", RegexOptions.IgnoreCase)[0].Trim();
+
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     #region types
@@ -356,6 +352,7 @@ namespace JacRed.Controllers.CRON
                             types = new string[] { "docuserial", "documovie" };
                             break;
                         case "6":
+                        case "15":
                             types = new string[] { "tvshow" };
                             break;
                         case "7":
@@ -363,6 +360,9 @@ namespace JacRed.Controllers.CRON
                             break;
                         case "10":
                             types = new string[] { "anime" };
+                            break;
+                        case "13":
+                            types = new string[] { "sport" };
                             break;
                     }
 
