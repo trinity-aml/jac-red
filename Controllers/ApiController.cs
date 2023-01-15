@@ -24,6 +24,15 @@ namespace JacRed.Controllers
             return File(System.IO.File.OpenRead("wwwroot/index.html"), "text/html");
         }
 
+        [Route("api/v1.0/conf")]
+        public JsonResult JacRedConf(string apikey)
+        {
+            return Json(new
+            {
+                apikey = string.IsNullOrWhiteSpace(AppInit.conf.apikey) || apikey == AppInit.conf.apikey
+            });
+        }
+
         #region Jackett
         [Route("/api/v2.0/indexers/{status}/results")]
         public ActionResult Jackett(string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)

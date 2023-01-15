@@ -392,6 +392,53 @@
             })
         }
 
+        function checkKey(key, call, cancel){
+            $.ajax({
+                dataType: 'json',
+                url: '/api/v1.0/conf?apikey='+encodeURIComponent(key),
+                crossDomain: true,
+                success: (json) => {
+                    if(json.apikey){
+                        window.localStorage.setItem('api_key', key)
+
+                        call()
+                    }
+                    else{
+                        let enter_key = prompt('Ключ не вернный, введите ключ')
+
+                        if(enter_key) checkKey(enter_key, call, cancel)
+                        else cancel()
+                    }
+                }
+            })
+        }
+
+        function getKey(call, cancel){
+            let key = window.localStorage.getItem('api_key')
+
+            if(key){
+                checkKey(key, call, cancel)
+            }
+            else{
+                $.ajax({
+                    dataType: 'json',
+                    url: '/api/v1.0/conf',
+                    crossDomain: true,
+                    success: (json) => {
+                        if(json.apikey){
+                            call()
+                        }
+                        else{
+                            let enter_key = prompt('Введите ключ')
+
+                            if(enter_key) checkKey(enter_key, call, cancel)
+                            else cancel()
+                        }
+                    }
+                })
+            }
+        }
+
         function search(){
             let query = window.localStorage.getItem('search')
 
@@ -412,42 +459,48 @@
             if(query){
                 loading.show()
 
-                $.ajax({
-                    dataType: 'json',
-                    url: '/api/v1.0/torrents?search='+encodeURIComponent(query)+(window.localStorage.getItem('exact') == '1' ? '&exact=true' : ''),
-                    crossDomain: true,
-                    success: (json) => {
-                        loading.hide()
+                getKey(function(){
+                    $.ajax({
+                        dataType: 'json',
+                        url: '/api/v1.0/torrents?search='+encodeURIComponent(query)+'&apikey='+encodeURIComponent(window.localStorage.getItem('api_key'))+(window.localStorage.getItem('exact') == '1' ? '&exact=true' : ''),
+                        crossDomain: true,
+                        success: (json) => {
+                            loading.hide()
 
-                        if(json.length){
-                            results = json
+                            if(json.length){
+                                results = json
 
-                            results.forEach(function(elem){
-                                let date = new Date(elem.createTime)
+                                results.forEach(function(elem){
+                                    let date = new Date(elem.createTime)
 
-                                elem.date = date.getTime()
+                                    elem.date = date.getTime()
 
-                                elem.dateHuman = date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2)  + '-' + ('0' + date.getDate()).slice(-2)
+                                    elem.dateHuman = date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2)  + '-' + ('0' + date.getDate()).slice(-2)
 
-                            })
+                                })
 
-                            initFilter()
+                                initFilter()
 
-                            filter()
+                                filter()
 
-                            sort()
+                                sort()
 
-                            filrt.show()
-                        }
-                        else{
+                                filrt.show()
+                            }
+                            else{
+                                noresults.show()
+                            }
+                        },
+                        error: (jqXHR, exception) => {
+                            loading.hide()
+
                             noresults.show()
                         }
-                    },
-                    error: (jqXHR, exception) => {
-                        loading.hide()
+                    })
+                },function(){
+                    loading.hide()
 
-                        noresults.show()
-                    }
+                    noresults.show()
                 })
             }
             else{
@@ -522,7 +575,7 @@
 
     
     <div class="footer">
-        <span>Работает на <a target="_blank">Crazy Spider</a></span>
+        <span>Работает на <a>Crazy Spider</a></span>
     </div>
 </div>
 
