@@ -104,7 +104,7 @@ namespace JacRed.Controllers.CRON
 
             try
             {
-                foreach (string cat in new List<string>() { "22", "252", "921", "930", "1457", "313", "312", "312", "119", "1803", "266", "81", "9", "1105", "1389" })
+                foreach (string cat in new List<string>() { "1950", "22", "252", "921", "930", "1457", "313", "312", "312", "119", "1803", "266", "81", "9", "1105", "1389" })
                 {
                     await parsePage(cat, page, parseMagnet: true);
                     log += $"{cat} - {page}\n";
@@ -174,7 +174,7 @@ namespace JacRed.Controllers.CRON
             })
             {
                 // Получаем html
-                string html = await HttpClient.Get($"{AppInit.conf.Rutracker.rqHost()}/forum/viewforum.php?f={cat}", timeoutSeconds: 10, useproxy: AppInit.conf.Rutracker.useproxy);
+                string html = await HttpClient.Get($"{AppInit.conf.Rutracker.rqHost()}/forum/viewforum.php?f={cat}", useproxy: AppInit.conf.Rutracker.useproxy);
                 if (html == null)
                     continue;
 
@@ -249,15 +249,15 @@ namespace JacRed.Controllers.CRON
         async Task<bool> parsePage(string cat, int page, bool parseMagnet = false)
         {
             #region Авторизация
-            if (Cookie == null)
-            {
-                if (await TakeLogin() == false)
-                    return false;
-            }
+            //if (Cookie == null)
+            //{
+            //    if (await TakeLogin() == false)
+            //        return false;
+            //}
             #endregion
 
-            string html = await HttpClient.Get($"{AppInit.conf.Rutracker.rqHost()}/forum/viewforum.php?f={cat}{(page == 0 ? "" : $"&start={page * 50}")}", cookie: Cookie, useproxy: AppInit.conf.Rutracker.useproxy);
-            if (html == null || !html.Contains("id=\"logged-in-username\""))
+            string html = await HttpClient.Get($"{AppInit.conf.Rutracker.rqHost()}/forum/viewforum.php?f={cat}{(page == 0 ? "" : $"&start={page * 50}")}", /*cookie: Cookie, */useproxy: AppInit.conf.Rutracker.useproxy);
+            if (html == null /*|| !html.Contains("id=\"logged-in-username\"")*/)
                 return false;
 
             foreach (string row in tParse.ReplaceBadNames(html).Split("class=\"torTopic\"").Skip(1))
