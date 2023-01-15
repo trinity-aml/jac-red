@@ -553,6 +553,7 @@ namespace JacRed.Controllers.CRON
                         {
                             torrent.Value.magnet = $"magnet:?xt=urn:btih:{torrentHash}";
                             torrent.Value.updateTime = DateTime.UtcNow;
+                            tParse.AddOrUpdateSearchDb(torrent.Value);
                         }
                     }
                 }

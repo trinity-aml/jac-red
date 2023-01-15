@@ -85,7 +85,7 @@ namespace JacRed.Engine.Parse
 
 
         #region AddOrUpdateSearchDb
-        static void AddOrUpdateSearchDb(TorrentDetails torrent)
+        public static void AddOrUpdateSearchDb(TorrentDetails torrent)
         {
             if ((!string.IsNullOrWhiteSpace(torrent.name) || !string.IsNullOrWhiteSpace(torrent.originalname)) && !string.IsNullOrWhiteSpace(torrent.magnet))
             {

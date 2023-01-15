@@ -32,6 +32,7 @@ namespace JacRed.Engine
                                 if (!tParse.db.TryGetValue(torrent.key, out TorrentDetails t))
                                 {
                                     tParse.db.TryAdd(torrent.key, (TorrentDetails)torrent.value.Clone());
+                                    tParse.AddOrUpdateSearchDb(tParse.db[torrent.key]);
                                     continue;
                                 }
 
@@ -39,6 +40,7 @@ namespace JacRed.Engine
                                     continue;
 
                                 tParse.db[torrent.key] = (TorrentDetails)torrent.value.Clone();
+                                tParse.AddOrUpdateSearchDb(tParse.db[torrent.key]);
                             }
 
                             lastsync = root.torrents.Last().value.updateTime.ToFileTimeUtc();

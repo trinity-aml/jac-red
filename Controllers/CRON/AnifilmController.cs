@@ -182,6 +182,7 @@ namespace JacRed.Controllers.CRON
                                 torrent.Value.title = title;
                                 torrent.Value.updateTime = DateTime.UtcNow;
                                 torrent.Value.sizeName = BencodeTo.SizeName(t);
+                                tParse.AddOrUpdateSearchDb(torrent.Value);
                             }
                         }
                     }

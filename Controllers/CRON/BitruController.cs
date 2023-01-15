@@ -385,6 +385,7 @@ namespace JacRed.Controllers.CRON
                     {
                         torrent.Value.magnet = magnet;
                         torrent.Value.updateTime = DateTime.UtcNow;
+                        tParse.AddOrUpdateSearchDb(torrent.Value);
                     }
                 }
             }
