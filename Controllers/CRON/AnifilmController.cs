@@ -97,69 +97,97 @@ namespace JacRed.Controllers.CRON
                 string url = Match("<a href=\"/(releases/[^\"]+)\"");
                 string name = Match("<a class=\"releases__title-russian\" [^>]+>([^<]+)</a>");
                 string originalname = Match("<span class=\"releases__title-original\">([^<]+)</span>");
-                string episodes = Match("([0-9]+-[0-9]+) из [0-9]+ эп.,");
+                string episodes = Match("([0-9]+(-[0-9]+)?) из [0-9]+ эп.,");
 
-                if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(originalname) || string.IsNullOrWhiteSpace(episodes))
+                if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(originalname))
+                    continue;
+
+                if (cat != "movies" && string.IsNullOrWhiteSpace(episodes))
                     continue;
 
                 url = $"{AppInit.conf.Anifilm.host}/{url}";
                 string title = $"{name} / {originalname} ({episodes})";
+
+                if (!string.IsNullOrWhiteSpace(episodes))
+                    title = title += $" ({episodes})";
                 #endregion
 
                 // Год выхода
                 if (!int.TryParse(Match("<a href=\"/releases/releases/[^\"]+\">([0-9]{4})</a> г\\."), out int relased) || relased == 0)
                     continue;
 
-                if (!tParse.TryGetValue(url, out TorrentDetails _tcache) || _tcache.title.Replace(" [1080p]", "") != title)
+                // Удаляем торрент где титл не совпадает (возможно обновлен, добавлена серия и т.д)
+                if (tParse.TryGetValue(url, out TorrentDetails _tcache) && _tcache.title.Replace(" [1080p]", "") != title)
+                    tParse.db.TryRemove(url, out _);
+
+                tParse.AddOrUpdate(new TorrentDetails()
                 {
-                    #region Обновляем/Получаем Magnet
-                    string magnet = null;
-                    string sizeName = null;
-
-                    string fulnews = await HttpClient.Get(url, useproxy: AppInit.conf.Anifilm.useproxy);
-                    if (fulnews == null)
-                        continue;
-
-                    string tid = null;
-                    string[] releasetorrents = fulnews.Split("<li class=\"release__torrents-item\">");
-
-                    string _rnews = releasetorrents.FirstOrDefault(i => i.Contains("href=\"/releases/download-torrent/") && i.Contains(" 1080p "));
-                    if (!string.IsNullOrWhiteSpace(_rnews))
-                    {
-                        tid = Regex.Match(_rnews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
-                        if (!string.IsNullOrWhiteSpace(tid))
-                            title += " [1080p]";
-                    }
-
-                    if (string.IsNullOrWhiteSpace(tid))
-                        tid = Regex.Match(fulnews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
-
-                    byte[] torrent = await HttpClient.Download($"{AppInit.conf.Anifilm.host}/{tid}", referer: url, useproxy: AppInit.conf.Anifilm.useproxy);
-                    magnet = BencodeTo.Magnet(torrent);
-                    sizeName = BencodeTo.SizeName(torrent);
-
-                    if (string.IsNullOrWhiteSpace(magnet))
-                        continue;
-                    #endregion
-
-                    tParse.AddOrUpdate(new TorrentDetails()
-                    {
-                        trackerName = "anifilm",
-                        types = new string[] { "anime" },
-                        url = url,
-                        title = title,
-                        sid = 1,
-                        sizeName = sizeName,
-                        createTime = createTime,
-                        magnet = magnet,
-                        name = name,
-                        originalname = originalname,
-                        relased = relased
-                    });
-                }
+                    trackerName = "anifilm",
+                    types = new string[] { "anime" },
+                    url = url,
+                    title = title,
+                    sid = 1,
+                    createTime = createTime,
+                    name = name.Split("(")[0].Trim(),
+                    originalname = originalname,
+                    relased = relased
+                });
             }
 
             return true;
+        }
+        #endregion
+
+        #region parseMagnet
+        static bool _parseMagnetWork = false;
+
+        async public Task<string> parseMagnet()
+        {
+            if (_parseMagnetWork)
+                return "work";
+
+            _parseMagnetWork = true;
+
+            try
+            {
+                foreach (var torrent in tParse.db.Where(i => i.Value.trackerName == "anifilm" && string.IsNullOrWhiteSpace(i.Value.magnet)))
+                {
+                    var fullNews = await HttpClient.Get(torrent.Key, useproxy: AppInit.conf.Anifilm.useproxy);
+                    if (fullNews != null)
+                    {
+                        string title = torrent.Value.title;
+
+                        string tid = null;
+                        string[] releasetorrents = fullNews.Split("<li class=\"release__torrents-item\">");
+
+                        string _rnews = releasetorrents.FirstOrDefault(i => i.Contains("href=\"/releases/download-torrent/") && i.Contains(" 1080p "));
+                        if (!string.IsNullOrWhiteSpace(_rnews))
+                        {
+                            tid = Regex.Match(_rnews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
+                            if (!string.IsNullOrWhiteSpace(tid) && !title.Contains(" [1080p]"))
+                                title += " [1080p]";
+                        }
+
+                        if (string.IsNullOrWhiteSpace(tid))
+                            tid = Regex.Match(fullNews, "href=\"/(releases/download-torrent/[0-9]+)\">скачать</a>").Groups[1].Value;
+
+                        byte[] t = await HttpClient.Download($"{AppInit.conf.Anifilm.host}/{tid}", referer: torrent.Key, useproxy: AppInit.conf.Anifilm.useproxy);
+                        string magnet = BencodeTo.Magnet(t);
+
+                        if (!string.IsNullOrWhiteSpace(magnet))
+                        {
+                            torrent.Value.magnet = magnet;
+                            torrent.Value.title = title;
+                            torrent.Value.updateTime = DateTime.UtcNow;
+                            torrent.Value.sizeName = BencodeTo.SizeName(t);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            _parseMagnetWork = false;
+            return "ok";
         }
         #endregion
     }
