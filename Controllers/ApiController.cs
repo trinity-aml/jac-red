@@ -449,7 +449,7 @@ namespace JacRed.Controllers
             if (!string.IsNullOrWhiteSpace(search) && Regex.IsMatch(search.Trim(), "^(tt|kp)[0-9]+$"))
             {
                 string memkey = $"api/v1.0/torrents:{search}";
-                if (!memoryCache.TryGetValue(memkey, out string original_name))
+                if (!memoryCache.TryGetValue(memkey, out (string original_name, string name) cache))
                 {
                     search = search.Trim();
                     string uri = $"&imdb={search}";
@@ -457,12 +457,21 @@ namespace JacRed.Controllers
                         uri = $"&kp={search.Remove(0, 2)}";
 
                     var root = await HttpClient.Get<JObject>("https://api.alloha.tv/?token=04941a9a3ca3ac16e2b4327347bbc1" + uri, timeoutSeconds: 8);
-                    original_name = root?.Value<JObject>("data")?.Value<string>("original_name");
+                    cache.original_name = root?.Value<JObject>("data")?.Value<string>("original_name");
+                    cache.name = root?.Value<JObject>("data")?.Value<string>("name");
 
-                    memoryCache.Set(memkey, original_name ?? string.Empty, DateTime.Now.AddDays(1));
+                    memoryCache.Set(memkey, cache, DateTime.Now.AddDays(1));
                 }
 
-                search = original_name;
+                if (!string.IsNullOrWhiteSpace(cache.name) && !string.IsNullOrWhiteSpace(cache.original_name))
+                {
+                    search = cache.original_name;
+                    altname = cache.name;
+                }
+                else
+                {
+                    search = cache.original_name ?? cache.name;
+                }
             }
             #endregion
 
