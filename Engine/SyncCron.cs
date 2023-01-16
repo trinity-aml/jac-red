@@ -49,6 +49,8 @@ namespace JacRed.Engine
                             if (root.take == root.torrents.Count)
                                 continue;
                         }
+
+                        root = null;
                     }
                 }
                 catch { }

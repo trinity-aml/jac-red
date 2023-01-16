@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using JacRed.Engine.CORE;
 using JacRed.Engine.Parse;
 using System.Linq;
 using System;
@@ -48,6 +47,9 @@ namespace JacRed.Controllers
                             size *= 1048576;
 
                         item.Value.size = size;
+
+                        if (!forced)
+                            item.Value.updateTime = DateTime.UtcNow;
                     }
                 }
             }
@@ -80,9 +82,6 @@ namespace JacRed.Controllers
 
                     if (!forced)
                         item.Value.updateTime = DateTime.UtcNow;
-
-                    // Титл для быстрого поиска
-                    item.Value.search_title = StringConvert.SearchName(item.Value.title);
 
                     #region quality
                     item.Value.quality = 480;

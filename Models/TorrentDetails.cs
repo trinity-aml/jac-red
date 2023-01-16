@@ -39,8 +39,6 @@ namespace JacRed.Models.tParse
 
 
         #region Быстрая сортировка
-        public string search_title { get; set; }
-
         public int quality { get; set; }
 
         public string videotype { get; set; }
