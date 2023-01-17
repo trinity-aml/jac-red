@@ -24,7 +24,7 @@ namespace JacRed.Models.tParse
 
         public DateTime createTime { get; set; } = DateTime.Now;
 
-        public DateTime updateTime { get; set; } = DateTime.Now;
+        public DateTime updateTime { get; set; } = DateTime.UtcNow;
 
         public string magnet { get; set; }
 
