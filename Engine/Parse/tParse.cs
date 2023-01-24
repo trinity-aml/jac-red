@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using JacRed.Engine.CORE;
@@ -113,36 +114,81 @@ namespace JacRed.Engine.Parse
         #region AddOrUpdate
         public static void AddOrUpdate(TorrentDetails torrent)
         {
-            if (db.TryGetValue(torrent.url, out TorrentDetails _cache))
+            if (db.TryGetValue(torrent.url, out TorrentDetails t))
             {
-                _cache.types = torrent.types;
-                _cache.trackerName = torrent.trackerName;
-                _cache.title = torrent.title;
+                void upt() { t.updateTime = DateTime.UtcNow; }
 
-                if (!string.IsNullOrWhiteSpace(torrent.magnet))
-                    _cache.magnet = torrent.magnet;
+                #region types
+                if (torrent.types != null)
+                {
+                    if (t.types == null || t.types.Length != torrent.types.Length)
+                        upt();
 
-                _cache.sid = torrent.sid;
-                _cache.pir = torrent.pir;
+                    foreach (string type in torrent.types)
+                    {
+                        if (!t.types.Contains(type))
+                            upt();
+                    }
 
-                if (torrent.size > 0)
-                    _cache.size = torrent.size;
+                    t.types = torrent.types;
+                }
+                #endregion
 
-                if (!string.IsNullOrWhiteSpace(torrent.sizeName))
-                    _cache.sizeName = torrent.sizeName;
+                if (torrent.trackerName != t.trackerName)
+                {
+                    t.trackerName = torrent.trackerName;
+                    upt();
+                }
 
-                _cache.updateTime = DateTime.UtcNow;
+                if (torrent.title != t.title)
+                {
+                    t.title = torrent.title;
+                    upt();
+                }
 
-                if (torrent.createTime > _cache.createTime)
-                    _cache.createTime = torrent.createTime;
+                if (!string.IsNullOrWhiteSpace(torrent.magnet) && torrent.magnet != t.magnet)
+                {
+                    t.magnet = torrent.magnet;
+                    upt();
+                }
 
-                if (string.IsNullOrWhiteSpace(_cache.originalname))
-                    _cache.originalname = torrent.originalname;
+                if (torrent.sid != t.sid)
+                {
+                    t.sid = torrent.sid;
+                    upt();
+                }
 
-                if (_cache.relased == 0)
-                    _cache.relased = torrent.relased;
+                if (torrent.pir != t.pir)
+                {
+                    t.pir = torrent.pir;
+                    upt();
+                }
 
-                AddOrUpdateSearchDb(_cache);
+                if (!string.IsNullOrWhiteSpace(torrent.sizeName) && torrent.sizeName != t.sizeName)
+                {
+                    t.sizeName = torrent.sizeName;
+                    upt();
+                }
+
+                if (!string.IsNullOrWhiteSpace(torrent.name) && torrent.name != t.name)
+                {
+                    t.name = torrent.name;
+                    upt();
+                }
+
+                if (!string.IsNullOrWhiteSpace(torrent.originalname) && torrent.originalname != t.originalname)
+                {
+                    t.originalname = torrent.originalname;
+                    upt();
+                }
+
+                if (torrent.relased > 0 && torrent.relased != t.relased)
+                {
+                    t.relased = torrent.relased;
+                    upt();
+                }
+
+                AddOrUpdateSearchDb(t);
             }
             else
             {

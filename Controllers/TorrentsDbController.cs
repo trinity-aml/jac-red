@@ -46,7 +46,7 @@ namespace JacRed.Controllers
                         if (gsize[2].Value.ToLower() is "tb" or "тб")
                             size *= 1048576;
 
-                        item.Value.size = size;
+                        item.Value.size = (long)(size * 1048576);
 
                         if (!forced)
                             item.Value.updateTime = DateTime.UtcNow;
