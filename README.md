@@ -74,7 +74,7 @@ example.conf
   },
   "Kinozal": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
 	"login": {
       "u": "",
       "p": ""
@@ -82,7 +82,7 @@ example.conf
   },
   "Toloka": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "login": {
       "u": "",
       "p": ""
@@ -90,7 +90,7 @@ example.conf
   },
   "Rutracker": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "login": {
       "u": "",
       "p": ""
@@ -98,7 +98,7 @@ example.conf
   },
   "Selezen": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "login": {
       "u": "",
       "p": ""
@@ -106,7 +106,7 @@ example.conf
   },
   "Animelayer": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "login": {
       "u": "",
       "p": ""
@@ -114,7 +114,7 @@ example.conf
   },
   "Baibako": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "login": {
       "u": "",
       "p": ""
@@ -122,7 +122,7 @@ example.conf
   },
   "Lostfilm": {
     "useproxy": false,
-	"reqMinute": 14
+	"reqMinute": 14,
     "cookie": ""
   },
   "proxy": {
