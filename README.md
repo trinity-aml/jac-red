@@ -30,7 +30,8 @@ Kinozal, Nnmclub, Rutor, Torrentby, Bitru, Rutracker, Megapeer, Selezen, Toloka 
 ```
 
 example.conf
-...
+
+```
 {
   "listenip": "any", // 127.0.0.1
   "listenport": 9117,
@@ -143,4 +144,4 @@ example.conf
     }
   ]
 }
-...
+```
