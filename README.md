@@ -1,3 +1,6 @@
+# Актуальная версия
+https://github.com/immisterio/jacred-fdb
+
 # Установка
 curl -s https://raw.githubusercontent.com/immisterio/jac.red/main/install.sh | bash
 
