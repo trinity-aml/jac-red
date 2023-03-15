@@ -99,7 +99,7 @@ namespace JacRed.Controllers
                         string originalname = StringConvert.SearchName(t.originalname);
 
                         // Точная выборка по name или originalname
-                        if (rqnum || (_n != null && _n == name) || (_o != null && _o == originalname))
+                        if ((_n != null && _n == name) || (_o != null && _o == originalname))
                         {
                             if (is_serial == 1)
                             {
@@ -225,10 +225,9 @@ namespace JacRed.Controllers
                     {
                         foreach (var t in val)
                         {
-                            if (exact && year > 0)
+                            if (exact)
                             {
-                                //if (StringConvert.SearchName(t.name) != _s && StringConvert.SearchName(t.originalname) != _s)
-                                if (year != t.relased)
+                                if (StringConvert.SearchName(t.name) != _s && StringConvert.SearchName(t.originalname) != _s)
                                     continue;
                             }
 
