@@ -503,7 +503,7 @@ namespace JacRed.Controllers
                 }),
                 jacred = true
 
-            }), contentType: "application/json; charset=utf-8");
+            }, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }), contentType: "application/json; charset=utf-8");
         }
         #endregion
 
