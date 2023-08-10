@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JacRed.Models.Tracks;
+using System;
 using System.Collections.Generic;
 
 namespace JacRed.Models.tParse
@@ -36,6 +37,10 @@ namespace JacRed.Models.tParse
 
         public int relased { get; set; }
 
+
+        public HashSet<string> languages { get; set; }
+
+        public List<ffStream> ffprobe { get; set; }
 
 
         #region Быстрая сортировка

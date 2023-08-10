@@ -35,25 +35,43 @@ namespace JacRed.Controllers
 
         #region Jackett
         [Route("/api/v2.0/indexers/{status}/results")]
-        public ActionResult Jackett(string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
+        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
             bool rqnum = false;
             var torrents = new List<TorrentDetails>();
 
             #region Запрос с NUM
-            var mNum = Regex.Match(query ?? string.Empty, "^([^a-z-A-Z]+) ([^а-я-А-Я]+) ([0-9]{4})$");
-
-            if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(title_original) &&
-                mNum.Success)
+            if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(title_original))
             {
-                if (Regex.IsMatch(mNum.Groups[2].Value, "[a-zA-Z]{4}"))
-                {
-                    rqnum = true;
-                    var g = mNum.Groups;
+                var mNum = Regex.Match(query ?? string.Empty, "^([^a-z-A-Z]+) ([^а-я-А-Я]+) ([0-9]{4})$");
 
-                    title = g[1].Value;
-                    title_original = g[2].Value;
-                    year = int.Parse(g[3].Value);
+                if (mNum.Success)
+                {
+                    if (Regex.IsMatch(mNum.Groups[2].Value, "[a-zA-Z]{4}"))
+                    {
+                        rqnum = true;
+                        var g = mNum.Groups;
+
+                        title = g[1].Value;
+                        title_original = g[2].Value;
+                        year = int.Parse(g[3].Value);
+                    }
+                }
+                else
+                {
+                    mNum = Regex.Match(query ?? string.Empty, "^([^a-z-A-Z]+) ([0-9]{4})$");
+
+                    if (mNum.Success)
+                    {
+                        if (Regex.IsMatch(mNum.Groups[1].Value, "[а-я-А-Я]{4}"))
+                        {
+                            rqnum = true;
+                            var g = mNum.Groups;
+
+                            title = g[1].Value;
+                            year = int.Parse(g[2].Value);
+                        }
+                    }
                 }
             }
             #endregion
@@ -87,130 +105,137 @@ namespace JacRed.Controllers
                 string _n = StringConvert.SearchName(title);
                 string _o = StringConvert.SearchName(title_original);
 
-                // Быстрая выборка по совпадению ключа в имени
-                foreach (var val in tParse.searchDb.Where(i => (_n != null && i.Key.Contains(_n)) || (_o != null && i.Key.Contains(_o))).Select(i => i.Value.Values))
+                void torrentsSearch(bool exact)
                 {
-                    foreach (var t in val)
+                    // Быстрая выборка по совпадению ключа в имени
+                    foreach (var val in tParse.searchDb.Where(i => (_n != null && i.Key.Contains(_n)) || (_o != null && i.Key.Contains(_o))).Select(i => i.Value.Values))
                     {
-                        if (t.types == null)
-                            continue;
-
-                        string name = StringConvert.SearchName(t.name);
-                        string originalname = StringConvert.SearchName(t.originalname);
-
-                        // Точная выборка по name или originalname
-                        if ((_n != null && _n == name) || (_o != null && _o == originalname))
+                        foreach (var t in val)
                         {
-                            if (is_serial == 1)
+                            if (t.types == null)
+                                continue;
+
+                            string name = StringConvert.SearchName(t.name);
+                            string originalname = StringConvert.SearchName(t.originalname);
+
+                            // Точная выборка по name или originalname
+                            if (!exact || (_n != null && _n == name) || (_o != null && _o == originalname))
                             {
-                                #region Фильм
-                                if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("anime") || t.types.Contains("documovie"))
+                                if (is_serial == 1)
                                 {
-                                    if (year > 0)
+                                    #region Фильм
+                                    if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("anime") || t.types.Contains("documovie"))
                                     {
-                                        if (t.relased == year || t.relased == (year - 1) || t.relased == (year + 1))
+                                        if (year > 0)
+                                        {
+                                            if (t.relased == year || t.relased == (year - 1) || t.relased == (year + 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
                                             torrents.Add(t);
+                                        }
                                     }
-                                    else
-                                    {
-                                        torrents.Add(t);
-                                    }
+                                    #endregion
                                 }
-                                #endregion
-                            }
-                            else if (is_serial == 2)
-                            {
-                                #region Сериал
-                                if (t.types.Contains("serial") || t.types.Contains("multserial") || t.types.Contains("anime") || t.types.Contains("docuserial") || t.types.Contains("tvshow"))
+                                else if (is_serial == 2)
                                 {
-                                    if (year > 0)
+                                    #region Сериал
+                                    if (t.types.Contains("serial") || t.types.Contains("multserial") || t.types.Contains("anime") || t.types.Contains("docuserial") || t.types.Contains("tvshow"))
                                     {
-                                        if (t.relased >= (year - 1))
+                                        if (year > 0)
+                                        {
+                                            if (t.relased >= (year - 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
                                             torrents.Add(t);
+                                        }
                                     }
-                                    else
-                                    {
-                                        torrents.Add(t);
-                                    }
+                                    #endregion
                                 }
-                                #endregion
-                            }
-                            else if (is_serial == 3)
-                            {
-                                #region tvshow
-                                if (t.types.Contains("tvshow"))
+                                else if (is_serial == 3)
                                 {
-                                    if (year > 0)
+                                    #region tvshow
+                                    if (t.types.Contains("tvshow"))
                                     {
-                                        if (t.relased >= (year - 1))
+                                        if (year > 0)
+                                        {
+                                            if (t.relased >= (year - 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
                                             torrents.Add(t);
+                                        }
                                     }
-                                    else
-                                    {
-                                        torrents.Add(t);
-                                    }
+                                    #endregion
                                 }
-                                #endregion
-                            }
-                            else if (is_serial == 4)
-                            {
-                                #region docuserial / documovie
-                                if (t.types.Contains("docuserial") || t.types.Contains("documovie"))
+                                else if (is_serial == 4)
                                 {
-                                    if (year > 0)
+                                    #region docuserial / documovie
+                                    if (t.types.Contains("docuserial") || t.types.Contains("documovie"))
                                     {
-                                        if (t.relased >= (year - 1))
+                                        if (year > 0)
+                                        {
+                                            if (t.relased >= (year - 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
                                             torrents.Add(t);
+                                        }
                                     }
-                                    else
-                                    {
-                                        torrents.Add(t);
-                                    }
+                                    #endregion
                                 }
-                                #endregion
-                            }
-                            else if (is_serial == 5)
-                            {
-                                #region anime
-                                if (t.types.Contains("anime"))
+                                else if (is_serial == 5)
                                 {
-                                    if (year > 0)
+                                    #region anime
+                                    if (t.types.Contains("anime"))
                                     {
-                                        if (t.relased >= (year - 1))
+                                        if (year > 0)
+                                        {
+                                            if (t.relased >= (year - 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
                                             torrents.Add(t);
+                                        }
                                     }
-                                    else
-                                    {
-                                        torrents.Add(t);
-                                    }
-                                }
-                                #endregion
-                            }
-                            else
-                            {
-                                #region Неизвестно
-                                if (year > 0)
-                                {
-                                    if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("documovie"))
-                                    {
-                                        if (t.relased == year || t.relased == (year - 1) || t.relased == (year + 1))
-                                            torrents.Add(t);
-                                    }
-                                    else
-                                    {
-                                        if (t.relased >= (year - 1))
-                                            torrents.Add(t);
-                                    }
+                                    #endregion
                                 }
                                 else
                                 {
-                                    torrents.Add(t);
+                                    #region Неизвестно
+                                    if (year > 0)
+                                    {
+                                        if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("documovie"))
+                                        {
+                                            if (t.relased == year || t.relased == (year - 1) || t.relased == (year + 1))
+                                                torrents.Add(t);
+                                        }
+                                        else
+                                        {
+                                            if (t.relased >= (year - 1))
+                                                torrents.Add(t);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        torrents.Add(t);
+                                    }
+                                    #endregion
                                 }
-                                #endregion
                             }
                         }
                     }
                 }
+
+                torrentsSearch(exact: true);
+                if (torrents.Count == 0)
+                    torrentsSearch(exact: false);
                 #endregion
             }
             else if (!string.IsNullOrWhiteSpace(query))
@@ -415,6 +440,27 @@ namespace JacRed.Controllers
 
                         if (torrent.createTime > t.torrent.createTime)
                             t.torrent.createTime = torrent.createTime;
+
+                        if (torrent.voices != null && torrent.voices.Count > 0)
+                        {
+                            if (t.torrent.voices == null)
+                                t.torrent.voices = new HashSet<string>();
+
+                            foreach (var v in torrent.voices)
+                                t.torrent.voices.Add(v);
+                        }
+
+                        if (torrent.languages != null && torrent.languages.Count > 0)
+                        {
+                            if (t.torrent.languages == null)
+                                t.torrent.languages = new HashSet<string>();
+
+                            foreach (var v in torrent.languages)
+                                t.torrent.languages.Add(v);
+                        }
+
+                        if (t.torrent.ffprobe == null && torrent.ffprobe != null)
+                            t.torrent.ffprobe = torrent.ffprobe;
                     }
                 }
 
@@ -422,9 +468,13 @@ namespace JacRed.Controllers
             }
             #endregion
 
+            var result = tsort.OrderByDescending(i => i.createTime).Take(2_000);
+            if (apikey == "rus")
+                result = result.Where(i => i.languages != null && i.languages.Contains("rus"));
+
             return Content(JsonConvert.SerializeObject(new
             {
-                Results = tsort.OrderByDescending(i => i.createTime).Take(2_000).Select(i => new
+                Results = result.Select(i => new
                 {
                     Tracker = i.trackerName,
                     Details = i.url != null && i.url.StartsWith("http") ? i.url : null,
@@ -435,9 +485,25 @@ namespace JacRed.Controllers
                     CategoryDesc = categoryDesc,
                     Seeders = i.sid,
                     Peers = i.pir,
-                    MagnetUri = i.magnet
-                })
-            }), contentType: "application/json; charset=utf-8");
+                    MagnetUri = i.magnet,
+                    i.ffprobe,
+                    i.languages,
+                    info = new
+                    {
+                        i.name,
+                        i.originalname,
+                        i.sizeName,
+                        i.relased,
+                        i.videotype,
+                        i.quality,
+                        i.voices,
+                        seasons = i.seasons != null && i.seasons.Count > 0 ? i.seasons : null,
+                        i.types
+                    }
+                }),
+                jacred = true
+
+            }, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }), contentType: "application/json; charset=utf-8");
         }
         #endregion
 
