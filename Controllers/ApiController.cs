@@ -38,6 +38,7 @@ namespace JacRed.Controllers
         public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
         {
             bool rqnum = false;
+            bool rqsearch = HttpContext.Request.QueryString.Value.Contains("&year=0000");
             var torrents = new List<TorrentDetails>();
 
             #region Запрос с NUM
@@ -99,7 +100,7 @@ namespace JacRed.Controllers
             }
             #endregion
 
-            if (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(title_original))
+            if (!rqsearch && (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(title_original)))
             {
                 #region Точный поиск
                 string _n = StringConvert.SearchName(title);
@@ -259,6 +260,12 @@ namespace JacRed.Controllers
                             if (t.types == null)
                                 continue;
 
+                            if (rqsearch)
+                            {
+                                torrents.Add(t);
+                                continue;
+                            }
+
                             if (is_serial == 1)
                             {
                                 if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("anime") || t.types.Contains("documovie"))
@@ -293,9 +300,14 @@ namespace JacRed.Controllers
                 }
                 #endregion
 
-                torrentsSearch(exact: true);
-                if (torrents.Count == 0)
+                if (rqsearch)
                     torrentsSearch(exact: false);
+                else
+                {
+                    torrentsSearch(exact: true);
+                    if (torrents.Count == 0)
+                        torrentsSearch(exact: false);
+                }
                 #endregion
             }
 
