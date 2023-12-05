@@ -35,10 +35,9 @@ namespace JacRed.Controllers
 
         #region Jackett
         [Route("/api/v2.0/indexers/{status}/results")]
-        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
+        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, Dictionary<string, string> category, int is_serial = -1)
         {
             bool rqnum = false;
-            bool rqsearch = HttpContext.Request.QueryString.Value.Contains("&year=0000");
             var torrents = new List<TorrentDetails>();
 
             #region Запрос с NUM
@@ -75,6 +74,9 @@ namespace JacRed.Controllers
                     }
                 }
             }
+
+            if (!rqnum)
+                rqnum = !HttpContext.Request.QueryString.Value.Contains("&is_serial=") && HttpContext.Request.Headers.UserAgent.ToString() == "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
             #endregion
 
             #region category
@@ -100,7 +102,7 @@ namespace JacRed.Controllers
             }
             #endregion
 
-            if (!rqsearch && (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(title_original)))
+            if (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(title_original))
             {
                 #region Точный поиск
                 string _n = StringConvert.SearchName(title);
@@ -260,12 +262,6 @@ namespace JacRed.Controllers
                             if (t.types == null)
                                 continue;
 
-                            if (rqsearch)
-                            {
-                                torrents.Add(t);
-                                continue;
-                            }
-
                             if (is_serial == 1)
                             {
                                 if (t.types.Contains("movie") || t.types.Contains("multfilm") || t.types.Contains("anime") || t.types.Contains("documovie"))
@@ -300,7 +296,7 @@ namespace JacRed.Controllers
                 }
                 #endregion
 
-                if (rqsearch)
+                if (is_serial == -1)
                     torrentsSearch(exact: false);
                 else
                 {
@@ -498,9 +494,9 @@ namespace JacRed.Controllers
                     Seeders = i.sid,
                     Peers = i.pir,
                     MagnetUri = i.magnet,
-                    i.ffprobe,
-                    i.languages,
-                    info = new
+                    ffprobe = rqnum ? null : i.ffprobe,
+                    languages = rqnum ? null : i.languages,
+                    info = rqnum ? null : new
                     {
                         i.name,
                         i.originalname,

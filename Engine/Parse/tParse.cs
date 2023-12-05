@@ -19,7 +19,23 @@ namespace JacRed.Engine.Parse
 
         static tParse()
         {
-            db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
+            if (File.Exists("Data/torrents.json.bz"))
+                db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>("Data/torrents.json");
+
+            if (db == null)
+            {
+                if (File.Exists($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.bz"))
+                    db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>($"Data/torrents_{DateTime.Today:dd-MM-yyyy}.json.bz");
+
+                if (db == null && File.Exists($"Data/torrents_{DateTime.Today.AddDays(-1):dd-MM-yyyy}.json.bz"))
+                    db = JsonStream.Read<ConcurrentDictionary<string, TorrentDetails>>($"Data/torrents_{DateTime.Today.AddDays(-1):dd-MM-yyyy}.json.bz");
+
+                if (db == null)
+                    db = new ConcurrentDictionary<string, TorrentDetails>();
+
+                if (File.Exists("lastsync.txt"))
+                    File.Delete("lastsync.txt");
+            }
 
             foreach (var item in db)
                 AddOrUpdateSearchDb(item.Value);
