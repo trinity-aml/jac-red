@@ -9,43 +9,51 @@ namespace JacRed.Engine.CORE
         #region Read
         public static T Read<T>(string path)
         {
-            var settings = new JsonSerializerSettings 
-            { 
-                Error = (se, ev) => { ev.ErrorContext.Handled = true; } 
-            };
-
-            var serializer = JsonSerializer.Create(settings);
-
-            using (Stream file = File.Exists($"{path}.gz") ? new GZipStream(File.OpenRead($"{path}.gz"), CompressionMode.Decompress) : File.OpenRead(path))
+            try
             {
-                using (var sr = new StreamReader(file))
+                var settings = new JsonSerializerSettings
                 {
-                    using (var jsonTextReader = new JsonTextReader(sr))
+                    Error = (se, ev) => { ev.ErrorContext.Handled = true; }
+                };
+
+                var serializer = JsonSerializer.Create(settings);
+
+                using (Stream file = File.Exists($"{path}.gz") ? new GZipStream(File.OpenRead($"{path}.gz"), CompressionMode.Decompress) : File.OpenRead(path))
+                {
+                    using (var sr = new StreamReader(file))
                     {
-                        return serializer.Deserialize<T>(jsonTextReader);
+                        using (var jsonTextReader = new JsonTextReader(sr))
+                        {
+                            return serializer.Deserialize<T>(jsonTextReader);
+                        }
                     }
                 }
             }
+            catch { return default; }
         }
         #endregion
 
         #region Write
         public static void Write(string path, object db)
         {
-            var settings = new JsonSerializerSettings()
+            try
             {
-                Formatting = Formatting.Indented
-            };
-
-            var serializer = JsonSerializer.Create(settings);
-
-            using (var sw = new StreamWriter(new GZipStream(File.OpenWrite($"{path}.gz"), CompressionMode.Compress)))
-            {
-                using (var jsonTextWriter = new JsonTextWriter(sw))
+                var settings = new JsonSerializerSettings()
                 {
-                    serializer.Serialize(jsonTextWriter, db);
+                    Formatting = Formatting.Indented
+                };
+
+                var serializer = JsonSerializer.Create(settings);
+
+                using (var sw = new StreamWriter(new GZipStream(File.OpenWrite($"{path}.gz"), CompressionMode.Compress)))
+                {
+                    using (var jsonTextWriter = new JsonTextWriter(sw))
+                    {
+                        serializer.Serialize(jsonTextWriter, db);
+                    }
                 }
             }
+            catch { }
         }
         #endregion
     }

@@ -35,7 +35,7 @@ namespace JacRed.Controllers
 
         #region Jackett
         [Route("/api/v2.0/indexers/{status}/results")]
-        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, int is_serial, Dictionary<string, string> category)
+        public ActionResult Jackett(string apikey, string query, string title, string title_original, int year, Dictionary<string, string> category, int is_serial = -1)
         {
             bool rqnum = false;
             var torrents = new List<TorrentDetails>();
@@ -74,6 +74,9 @@ namespace JacRed.Controllers
                     }
                 }
             }
+
+            if (!rqnum)
+                rqnum = !HttpContext.Request.QueryString.Value.Contains("&is_serial=") && HttpContext.Request.Headers.UserAgent.ToString() == "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
             #endregion
 
             #region category
@@ -293,9 +296,14 @@ namespace JacRed.Controllers
                 }
                 #endregion
 
-                torrentsSearch(exact: true);
-                if (torrents.Count == 0)
+                if (is_serial == -1)
                     torrentsSearch(exact: false);
+                else
+                {
+                    torrentsSearch(exact: true);
+                    if (torrents.Count == 0)
+                        torrentsSearch(exact: false);
+                }
                 #endregion
             }
 
@@ -486,9 +494,9 @@ namespace JacRed.Controllers
                     Seeders = i.sid,
                     Peers = i.pir,
                     MagnetUri = i.magnet,
-                    i.ffprobe,
-                    i.languages,
-                    info = new
+                    ffprobe = rqnum ? null : i.ffprobe,
+                    languages = rqnum ? null : i.languages,
+                    info = rqnum ? null : new
                     {
                         i.name,
                         i.originalname,
